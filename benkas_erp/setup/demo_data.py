@@ -189,10 +189,129 @@ def run():
 
     frappe.db.commit()
 
+    _material_demo(company)
+    _liven_dashboard()
+
+    # a delay reason on one progress log -> Delay Analysis report / chart
+    dpl = frappe.db.get_value("Daily Progress Log", {"plant_section": "FERM"}, "name")
+    if dpl and not frappe.db.get_value("Daily Progress Log", dpl, "delay_reason"):
+        if frappe.db.exists("Delay Reason", "Material Delay"):
+            frappe.db.set_value("Daily Progress Log", dpl, "delay_reason", "Material Delay")
+
+    frappe.db.commit()
+
     counts = {dt: frappe.db.count(dt) for dt in [
         "Employee", "Contractor", "Labour Master", "Gate Entry", "Daily Progress Log",
         "Generator Log", "Power Consumption Log", "Site Vehicle Log", "Safety Violation Log",
         "Visitor Log", "Gate Pass", "Contractor Tools Register", "Safety Work Permit",
-        "Electrical Work Permit"]}
+        "Electrical Work Permit", "Stock Entry", "Quality Inspection"]}
     print("DEMO DATA COUNTS:", counts)
     return counts
+
+
+def _liven_dashboard():
+    """Set some task progress / statuses so exec cards show real movement."""
+    prog = [("DIST", "Civil & Foundation", 100, "Completed"),
+            ("DIST", "Structural / Erection", 60, "Working"),
+            ("FERM", "Civil & Foundation", 80, "Working")]
+    for code, act, pct, status in prog:
+        parent = frappe.db.get_value("Plant Section", code, "project_task")
+        t = frappe.db.get_value("Task", {"subject": f"{code} - {act}", "parent_task": parent}, "name")
+        if t:
+            frappe.db.set_value("Task", t, {"progress": pct, "status": status})
+
+    # a tools mismatch -> Tool Mismatches card
+    ctr = frappe.db.get_value("Contractor Tools Register", {}, "name")
+    if ctr:
+        doc = frappe.get_doc("Contractor Tools Register", ctr)
+        if doc.qty and doc.qty_returned != 1:
+            doc.qty_returned = 1  # returned fewer than taken -> Mismatch (hook sets status)
+            doc.save(ignore_permissions=True)
+
+    # a permit in progress -> Active Safety Permits card
+    swp = frappe.db.get_value("Safety Work Permit", {}, "name")
+    if swp:
+        frappe.db.set_value("Safety Work Permit", swp, "permit_status", "Work in Progress")
+
+    frappe.db.commit()
+
+
+def _material_demo(company):
+    """Item + Material Receipt/Issue stock entries + a rejected Quality Inspection,
+    so the material/QC/stock-balance reports and charts show real data."""
+    warehouse = frappe.db.get_value("Plant Section", "DIST", "warehouse")
+    if not warehouse:
+        return
+
+    item_code = "BK-CEMENT-OPC53"
+    if not frappe.db.exists("Item", item_code):
+        item_group = (frappe.db.get_value("Item Group", {"is_group": 0}, "name")
+                      or "All Item Groups")
+        frappe.get_doc({
+            "doctype": "Item", "item_code": item_code, "item_name": "Cement OPC 53 (Demo)",
+            "item_group": item_group, "stock_uom": "Nos", "is_stock_item": 1,
+            "inspection_required_before_purchase": 1,
+        }).insert(ignore_permissions=True)
+    else:
+        frappe.db.set_value("Item", item_code, "inspection_required_before_purchase", 1)
+
+    # Material Receipt (adds stock -> Bin) tagged to DIST
+    if not frappe.db.exists("Stock Entry", {"stock_entry_type": "Material Receipt",
+                                            "plant_section": "DIST"}):
+        se = frappe.get_doc({
+            "doctype": "Stock Entry", "stock_entry_type": "Material Receipt",
+            "company": company, "plant_section": "DIST", "posting_date": today(),
+            "items": [{"item_code": item_code, "qty": 100, "t_warehouse": warehouse,
+                       "basic_rate": 350, "allow_zero_valuation_rate": 1}],
+        })
+        se.insert(ignore_permissions=True)
+        se.submit()
+
+    # Material Issue (consumes stock) tagged to DIST -> feeds DPL rollup + report
+    if not frappe.db.exists("Stock Entry", {"stock_entry_type": "Material Issue",
+                                            "plant_section": "DIST"}):
+        se = frappe.get_doc({
+            "doctype": "Stock Entry", "stock_entry_type": "Material Issue",
+            "company": company, "plant_section": "DIST", "posting_date": today(),
+            "items": [{"item_code": item_code, "qty": 30, "s_warehouse": warehouse,
+                       "allow_zero_valuation_rate": 1}],
+        })
+        se.insert(ignore_permissions=True)
+        se.submit()
+
+    # Supplier + draft Purchase Receipt (weighbridge + invoice photo, weight variance)
+    supplier = "Benkas Test Supplier"
+    if not frappe.db.exists("Supplier", supplier):
+        sg = frappe.db.get_value("Supplier Group", {"is_group": 0}, "name") or "All Supplier Groups"
+        frappe.get_doc({"doctype": "Supplier", "supplier_name": supplier,
+                        "supplier_group": sg}).insert(ignore_permissions=True)
+
+    pr_name = frappe.db.get_value("Purchase Receipt", {"supplier": supplier, "docstatus": 0}, "name")
+    if not pr_name:
+        try:
+            pr = frappe.get_doc({
+                "doctype": "Purchase Receipt", "supplier": supplier, "company": company,
+                "posting_date": today(), "plant_section": "DIST",
+                "weighbridge_slip_no": "WB-0001", "gross_weight": 60, "tare_weight": 5,
+                "supplier_invoice_photo": PLACEHOLDER_IMG,
+                "items": [{"item_code": item_code, "qty": 50, "rate": 350,
+                           "warehouse": warehouse, "allow_zero_valuation_rate": 1}],
+            })
+            pr.insert(ignore_permissions=True)
+            pr_name = pr.name
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Benkas: demo PR failed")
+
+    # a rejected Quality Inspection against the PR -> QC Rejection report + QC chart
+    if pr_name and not frappe.db.exists("Quality Inspection", {"item_code": item_code}):
+        try:
+            frappe.get_doc({
+                "doctype": "Quality Inspection", "inspection_type": "Incoming",
+                "reference_type": "Purchase Receipt", "reference_name": pr_name,
+                "item_code": item_code, "sample_size": 5, "report_date": today(),
+                "status": "Rejected", "inspected_by": "Administrator",
+            }).insert(ignore_permissions=True)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Benkas: demo QI failed")
+
+    frappe.db.commit()

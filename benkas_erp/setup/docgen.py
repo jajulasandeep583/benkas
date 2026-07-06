@@ -275,5 +275,17 @@ def build(path=None):
 
     out = path or WIN_OUT
     doc.save(out)
+
+    # also keep a committed copy inside the app repo (docs/)
+    try:
+        import os
+        app_docs = frappe.get_app_path("benkas_erp", "..", "docs")
+        os.makedirs(app_docs, exist_ok=True)
+        repo_copy = os.path.join(app_docs, "Benkas_ERP_System_Documentation.docx")
+        doc.save(repo_copy)
+        print("Repo copy written to:", repo_copy)
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Benkas: repo docx copy failed")
+
     print("Documentation written to:", out)
     return out

@@ -13,6 +13,15 @@ import frappe
 
 SM = "System Manager"
 
+COLORS = {
+    "Manpower Manager": "blue",
+    "Material and Purchase": "orange",
+    "Work Schedule and Progress": "green",
+    "Site Safety and Assets": "red",
+    "Benkas Core": "gray",
+    "Benkas MIS": "purple",
+}
+
 
 def _project():
     return (frappe.db.get_value("Project", {"project_name": "Ramshy Bio Ethanol Plant"}, "name")
@@ -242,7 +251,8 @@ def _make_workspace(name, icon, roles, shortcuts, card_keys, chart_keys, link_gr
 
     frappe.get_doc({
         "doctype": "Workspace", "name": name, "title": name, "label": name,
-        "module": "Benkas Core", "public": 1, "icon": icon, "sequence_id": seq,
+        "module": "Benkas Core", "public": 1, "icon": icon,
+        "indicator_color": COLORS.get(name, "gray"), "sequence_id": seq,
         "content": _content(card_ids, chart_ids, card_keys, chart_keys, ws_shortcuts, link_groups, name),
         "number_cards": number_cards, "charts": charts, "shortcuts": ws_shortcuts,
         "links": links, "roles": ws_roles,

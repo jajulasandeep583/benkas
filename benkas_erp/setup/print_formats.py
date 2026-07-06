@@ -44,7 +44,10 @@ STAFF = CSS + """
       <div class="field"><b>ID</b> {{ doc.name }}</div>
     </div>
   </div>
-  <div class="code">{{ doc.id_card_barcode or doc.name }}</div>
+  <div style="text-align:center;margin-top:8px">
+    <img src="{{ qr_data_uri(doc.id_card_barcode or doc.name) }}" style="width:92px;height:92px">
+    <div class="code">{{ doc.id_card_barcode or doc.name }}</div>
+  </div>
 </div>
 """
 
@@ -60,7 +63,10 @@ LABOUR = CSS + """
       <div class="field"><b>Status</b> {{ doc.status }}</div>
     </div>
   </div>
-  <div class="code">{{ doc.id_card_barcode or doc.name }}</div>
+  <div style="text-align:center;margin-top:8px">
+    <img src="{{ qr_data_uri(doc.id_card_barcode or doc.name) }}" style="width:92px;height:92px">
+    <div class="code">{{ doc.id_card_barcode or doc.name }}</div>
+  </div>
 </div>
 """
 
@@ -84,7 +90,10 @@ GATE_ENTRY = CSS + """
     <table class="t"><tr><th>PPE Item</th><th>Available</th></tr>
       {% for r in doc.ppe_checklist %}<tr><td>{{ r.ppe_item }}</td><td>{{ 'Yes' if r.is_available else 'No' }}</td></tr>{% endfor %}
     </table>{% endif %}
-    <div class="code">{{ doc.name }}</div>
+    <div style="text-align:center;margin-top:8px;clear:both">
+      <img src="{{ qr_data_uri(doc.name) }}" style="width:90px;height:90px">
+      <div class="code">{{ doc.name }}</div>
+    </div>
   </div>
 </div>
 """
@@ -104,7 +113,10 @@ GATE_PASS = CSS + """
       <div class="f"><b>Actual Return</b> {{ frappe.format(doc.actual_return_time, {'fieldtype':'Datetime'}) }}</div>
     </div>
     <div class="f" style="font-size:12px;margin-top:6px"><b>Reason</b> {{ doc.reason or '-' }}</div>
-    <div class="code">{{ doc.barcode or doc.name }}</div>
+    <div style="text-align:center;margin-top:8px;clear:both">
+      <img src="{{ qr_data_uri(doc.barcode or doc.name) }}" style="width:90px;height:90px">
+      <div class="code">{{ doc.barcode or doc.name }}</div>
+    </div>
     <div style="font-size:11px;margin-top:6px;color:#777">Approved digitally in ERP — approver login + timestamp is the authorised signature.</div>
   </div>
 </div>
@@ -124,7 +136,10 @@ VISITOR = CSS + """
       <div class="f"><b>Time Out</b> {{ frappe.format(doc.time_out, {'fieldtype':'Datetime'}) }}</div>
     </div>
     <div class="f" style="font-size:12px;margin-top:6px"><b>Purpose</b> {{ doc.purpose or '-' }}</div>
-    <div class="code">{{ doc.visitor_slip or doc.name }}</div>
+    <div style="text-align:center;margin-top:8px;clear:both">
+      <img src="{{ qr_data_uri(doc.visitor_slip or doc.name) }}" style="width:90px;height:90px">
+      <div class="code">{{ doc.visitor_slip or doc.name }}</div>
+    </div>
   </div>
 </div>
 """
@@ -148,7 +163,15 @@ SAFETY_PERMIT = CSS + """
     </table>{% endif %}
     <div style="font-size:12px;margin-top:8px">Closing Confirmation:
       <b>{{ 'YES' if doc.closing_confirmation else 'NO' }}</b></div>
-    <div class="code">{{ doc.name }}</div>
+    <div style="margin-top:8px">
+      {% if doc.site_photo %}<img src="{{ doc.site_photo }}" style="width:120px;height:90px;object-fit:cover;border:1px solid #999;margin:3px">{% endif %}
+      {% if doc.ppe_photo %}<img src="{{ doc.ppe_photo }}" style="width:120px;height:90px;object-fit:cover;border:1px solid #999;margin:3px">{% endif %}
+      {% if doc.barricading_photo %}<img src="{{ doc.barricading_photo }}" style="width:120px;height:90px;object-fit:cover;border:1px solid #999;margin:3px">{% endif %}
+    </div>
+    <div style="text-align:center;margin-top:6px">
+      <img src="{{ qr_data_uri(doc.name) }}" style="width:84px;height:84px">
+      <div class="code">{{ doc.name }}</div>
+    </div>
   </div>
 </div>
 """
@@ -171,7 +194,10 @@ ELEC_PERMIT = CSS + """
       {% for r in doc.job_log %}<tr><td>{{ frappe.format(r.start_time, {'fieldtype':'Datetime'}) }}</td>
       <td>{{ frappe.format(r.end_time, {'fieldtype':'Datetime'}) }}</td><td>{{ r.handover_notes or '' }}</td></tr>{% endfor %}
     </table>{% endif %}
-    <div class="code">{{ doc.name }}</div>
+    <div style="text-align:center;margin-top:6px">
+      <img src="{{ qr_data_uri(doc.name) }}" style="width:84px;height:84px">
+      <div class="code">{{ doc.name }}</div>
+    </div>
   </div>
 </div>
 """
@@ -212,9 +238,14 @@ FORMATS = [
 
 def create():
     for name, dt, module, html in FORMATS:
-        if frappe.db.exists("Print Format", name):
-            continue
         if not frappe.db.exists("DocType", dt):
+            continue
+        if frappe.db.exists("Print Format", name):
+            # keep HTML in sync with code on every migrate
+            pf = frappe.get_doc("Print Format", name)
+            if pf.html != html:
+                pf.html = html
+                pf.save(ignore_permissions=True)
             continue
         frappe.get_doc({
             "doctype": "Print Format", "name": name, "doc_type": dt, "module": module,

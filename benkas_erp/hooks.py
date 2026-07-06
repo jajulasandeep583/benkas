@@ -282,6 +282,9 @@ doc_events = {
     "Safety Work Permit": {
         "validate": "benkas_erp.site_safety_assets.permit_hooks.validate_safety_permit",
     },
+    "Safety Violation Log": {
+        "validate": "benkas_erp.site_safety_assets.permit_hooks.validate_safety_violation",
+    },
     "Electrical Work Permit": {
         "validate": "benkas_erp.site_safety_assets.permit_hooks.validate_electrical_permit",
     },
@@ -304,3 +307,6 @@ add_to_apps_screen = [
         "route": "/app/benkas-mis",
     }
 ]
+
+# Expose helpers to Jinja (print formats)
+jinja = {"methods": ["benkas_erp.utils.qr_data_uri"]}
