@@ -34,9 +34,11 @@ def setup_all():
     frappe.db.commit()
 
     if _doctypes_ready():
+        from benkas_erp import scan
         for step in (custom_fields.create, field_help.apply, permissions.apply,
                      workflows.create_workflows, notifications.create_notifications,
                      reports.create_reports, activities.seed_activities,
-                     onboarding.create, workspaces.create, print_formats.create):
+                     onboarding.create, workspaces.create, print_formats.create,
+                     scan.backfill_barcodes):
             step()
             frappe.db.commit()

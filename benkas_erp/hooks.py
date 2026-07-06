@@ -289,6 +289,11 @@ doc_events = {
     "Electrical Work Permit": {
         "validate": "benkas_erp.site_safety_assets.permit_hooks.validate_electrical_permit",
     },
+    # standardise the QR scan key on cards/slips after they are created
+    "Employee": {"after_insert": "benkas_erp.scan.set_person_barcode"},
+    "Labour Master": {"after_insert": "benkas_erp.scan.set_person_barcode"},
+    "Gate Pass": {"after_insert": "benkas_erp.scan.set_gatepass_barcode"},
+    "Visitor Log": {"after_insert": "benkas_erp.scan.set_visitor_barcode"},
 }
 
 scheduler_events = {
@@ -314,7 +319,7 @@ add_to_apps_screen = [
 ]
 
 # Expose helpers to Jinja (print formats)
-jinja = {"methods": ["benkas_erp.utils.qr_data_uri"]}
+jinja = {"methods": ["benkas_erp.utils.qr_data_uri", "benkas_erp.utils.qr_key"]}
 
 # The Benkas ERP app tile should land on the MIS dashboard (boot otherwise routes
 # it to the first workspace slug, which isn't necessarily MIS).

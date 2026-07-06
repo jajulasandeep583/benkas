@@ -45,7 +45,7 @@ STAFF = CSS + """
     </div>
   </div>
   <div style="text-align:center;margin-top:8px">
-    <img src="{{ qr_data_uri(doc.id_card_barcode or doc.name) }}" style="width:92px;height:92px">
+    <img src="{{ qr_data_uri(qr_key(doc.doctype, doc.name)) }}" style="width:120px;height:120px">
     <div class="code">{{ doc.id_card_barcode or doc.name }}</div>
   </div>
 </div>
@@ -64,7 +64,7 @@ LABOUR = CSS + """
     </div>
   </div>
   <div style="text-align:center;margin-top:8px">
-    <img src="{{ qr_data_uri(doc.id_card_barcode or doc.name) }}" style="width:92px;height:92px">
+    <img src="{{ qr_data_uri(qr_key(doc.doctype, doc.name)) }}" style="width:120px;height:120px">
     <div class="code">{{ doc.id_card_barcode or doc.name }}</div>
   </div>
 </div>
@@ -91,7 +91,7 @@ GATE_ENTRY = CSS + """
       {% for r in doc.ppe_checklist %}<tr><td>{{ r.ppe_item }}</td><td>{{ 'Yes' if r.is_available else 'No' }}</td></tr>{% endfor %}
     </table>{% endif %}
     <div style="text-align:center;margin-top:8px;clear:both">
-      <img src="{{ qr_data_uri(doc.name) }}" style="width:90px;height:90px">
+      <img src="{{ qr_data_uri(doc.name) }}" style="width:100px;height:100px">
       <div class="code">{{ doc.name }}</div>
     </div>
   </div>
@@ -114,7 +114,7 @@ GATE_PASS = CSS + """
     </div>
     <div class="f" style="font-size:12px;margin-top:6px"><b>Reason</b> {{ doc.reason or '-' }}</div>
     <div style="text-align:center;margin-top:8px;clear:both">
-      <img src="{{ qr_data_uri(doc.barcode or doc.name) }}" style="width:90px;height:90px">
+      <img src="{{ qr_data_uri(qr_key('Gate Pass', doc.name)) }}" style="width:112px;height:112px">
       <div class="code">{{ doc.barcode or doc.name }}</div>
     </div>
     <div style="font-size:11px;margin-top:6px;color:#777">Approved digitally in ERP — approver login + timestamp is the authorised signature.</div>
@@ -137,7 +137,7 @@ VISITOR = CSS + """
     </div>
     <div class="f" style="font-size:12px;margin-top:6px"><b>Purpose</b> {{ doc.purpose or '-' }}</div>
     <div style="text-align:center;margin-top:8px;clear:both">
-      <img src="{{ qr_data_uri(doc.visitor_slip or doc.name) }}" style="width:90px;height:90px">
+      <img src="{{ qr_data_uri(qr_key('Visitor Log', doc.name)) }}" style="width:112px;height:112px">
       <div class="code">{{ doc.visitor_slip or doc.name }}</div>
     </div>
   </div>
@@ -169,7 +169,7 @@ SAFETY_PERMIT = CSS + """
       {% if doc.barricading_photo %}<img src="{{ doc.barricading_photo }}" style="width:120px;height:90px;object-fit:cover;border:1px solid #999;margin:3px">{% endif %}
     </div>
     <div style="text-align:center;margin-top:6px">
-      <img src="{{ qr_data_uri(doc.name) }}" style="width:84px;height:84px">
+      <img src="{{ qr_data_uri(doc.name) }}" style="width:100px;height:100px">
       <div class="code">{{ doc.name }}</div>
     </div>
   </div>
@@ -195,7 +195,7 @@ ELEC_PERMIT = CSS + """
       <td>{{ frappe.format(r.end_time, {'fieldtype':'Datetime'}) }}</td><td>{{ r.handover_notes or '' }}</td></tr>{% endfor %}
     </table>{% endif %}
     <div style="text-align:center;margin-top:6px">
-      <img src="{{ qr_data_uri(doc.name) }}" style="width:84px;height:84px">
+      <img src="{{ qr_data_uri(doc.name) }}" style="width:100px;height:100px">
       <div class="code">{{ doc.name }}</div>
     </div>
   </div>

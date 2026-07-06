@@ -17,6 +17,19 @@ STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspecti
 WIN_OUT = "/mnt/c/Users/jajul/Downloads/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-07", "Working QR scan loop + full usage manual", [
+        "Standardised QR content: EMP-/LAB-/GP-/VIS- prefix + record name; backfilled onto "
+        "all cards/slips and kept current via after_insert hooks.",
+        "Gate Scan Station desk page (/app/benkas-scan): always-focused input for USB HID "
+        "scanners + native-BarcodeDetector camera scan + live photo capture for IN.",
+        "Server-side scan routing (benkas_erp/scan.py, whitelisted): person IN->OUT, gate "
+        "pass Approved->Out->Returned, visitor sign-out, inactive-labour block.",
+        "Bumped printed QR to ~3 cm with error-correction M and a 4-module quiet zone.",
+        "audit.py _scan_loop: renders a real card, decodes its QR with OpenCV, then drives "
+        "the whole loop end-to-end (all PASS).",
+        "New human-facing manuals generated from code (setup/usermanual.py): "
+        "Benkas_ERP_User_Manual.docx + two one-page quick-reference cards, committed to docs/.",
+    ]),
     ("2026-07-07", "Benkas Core desktop tile — actually delivered", [
         "v16 renders the /apps grid from bootinfo.app_data (one entry per installed "
         "app). Added an extend_bootinfo hook (benkas_erp/boot.py) that appends a second "

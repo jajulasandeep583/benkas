@@ -51,10 +51,14 @@ def _labour(name, contractor, category):
 
 
 def _gate_entry(ptype, person, section, minutes_ago, work):
+    # pin firmly to TODAY (a "minutes ago" offset can cross midnight to yesterday,
+    # which then fails the daily worker-gate-entry check in the site log)
+    from frappe.utils import get_datetime
+    time_in = add_to_date(get_datetime(today() + " 08:00:00"), minutes=minutes_ago % 240)
     doc = frappe.get_doc({
         "doctype": "Gate Entry", "person_type": ptype, "person": person,
         "plant_section": section, "entry_type": "In",
-        "time_in": add_to_date(now_datetime(), minutes=-minutes_ago),
+        "time_in": time_in,
         "work_description": work, "photo": PLACEHOLDER_IMG,
         "ppe_checklist": [{"ppe_item": "Helmet", "is_available": 1},
                           {"ppe_item": "Safety Shoes", "is_available": 1}],

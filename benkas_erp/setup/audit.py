@@ -77,6 +77,116 @@ FEATURES = [
 ]
 
 
+def _decode_qr_from_png_datauri(data_uri):
+    """Decode a QR from a base64 PNG data-URI (returns the encoded string or None)."""
+    try:
+        import base64 as _b64
+        import numpy as np
+        import cv2
+        png = _b64.b64decode(data_uri.split(",", 1)[1])
+        img = cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_GRAYSCALE)
+        val, _pts, _ = cv2.QRCodeDetector().detectAndDecode(img)
+        return val or None
+    except Exception:
+        return None
+
+
+def _scan_loop():
+    """End-to-end QR scan loop: render a real card, decode its QR, then drive the
+    scan station's server method through IN->OUT, gate-pass, visitor and the
+    inactive-block. Self-contained + cleans up."""
+    print("\n--- QR SCAN LOOP (scan station) ---")
+    import re
+    from benkas_erp import scan as S
+    from frappe.model.workflow import apply_workflow
+
+    created = []  # (doctype, name) to clean up
+    try:
+        contractor = frappe.db.get_value("Contractor", {}, "name")
+        emp = frappe.db.get_value("Employee", {}, "name")
+        section = frappe.db.get_value("Plant Section", {"is_active": 1}, "name")
+
+        # fresh test labour (no pre-existing gate entries) so IN is unambiguous
+        tl = frappe.get_doc({"doctype": "Labour Master", "labour_name": "Scan Test Worker",
+                             "status": "Active", "contractor": contractor,
+                             "category": "Skilled"}).insert(ignore_permissions=True)
+        created.append(("Labour Master", tl.name))
+        key = S.qr_key("Labour Master", tl.name)
+
+        # 1) render the actual ID card and decode the QR printed on it
+        html = frappe.get_print("Labour Master", tl.name, print_format="Labour ID Card")
+        m = re.search(r"data:image/png;base64,[A-Za-z0-9+/=]+", html)
+        try:
+            import cv2  # noqa
+            have_decoder = True
+        except Exception:
+            have_decoder = False
+        if not have_decoder:
+            print("  n/a   card QR decode skipped (no OpenCV on this site); encode key = " + repr(key))
+        else:
+            decoded = _decode_qr_from_png_datauri(m.group(0)) if m else None
+            print(f"  {'PASS' if decoded == key else 'FAIL'}  card QR decodes to the standard key: "
+                  f"encoded={key!r} decoded={decoded!r}")
+
+        # 2) scan IN -> identifies person, offers IN (no open entry yet)
+        r1 = S.scan(key)
+        in_ok = r1.get("action") == "IN" and r1.get("person", {}).get("name") == "Scan Test Worker"
+        print(f"  {'PASS' if in_ok else 'FAIL'}  scan -> IN, identifies person "
+              f"({r1.get('person', {}).get('name')!r}), section pre-filled={r1.get('prefill', {}).get('plant_section')!r}")
+
+        # 3) create the gate entry (as the guard would, after photo) then scan OUT
+        r2 = S.create_gate_in(key, r1.get("prefill", {}).get("plant_section") or section, None)
+        ge = r2.get("reference")
+        if ge:
+            created.append(("Gate Entry", ge))
+        print(f"  {'PASS' if r2.get('action') == 'IN_DONE' and ge else 'FAIL'}  create_gate_in -> Gate Entry {ge}")
+        r3 = S.scan(key)
+        to = frappe.db.get_value("Gate Entry", ge, "time_out") if ge else None
+        print(f"  {'PASS' if r3.get('action') == 'OUT' and r3.get('reference') == ge and to else 'FAIL'}  "
+              f"scan again -> OUT closes the same entry (time_out set: {bool(to)})")
+
+        # 4) inactive labour is blocked
+        frappe.db.set_value("Labour Master", tl.name, "status", "Exited")
+        rb = S.scan(key)
+        blocked = (not rb.get("ok")) and ("BLOCK" in (rb.get("message", "").upper()))
+        print(f"  {'PASS' if blocked else 'FAIL'}  inactive labour blocked -> {rb.get('message')!r}")
+        frappe.db.set_value("Labour Master", tl.name, "status", "Active")
+
+        # 5) Gate Pass: not-approved rejected, then Approved -> Out -> Returned
+        gp_req = frappe.db.get_value("Gate Pass", {"pass_status": "Requested"}, "name")
+        if gp_req:
+            rna = S.scan(S.qr_key("Gate Pass", gp_req))
+            na_ok = (not rna.get("ok")) and ("NOT APPROVED" in rna.get("message", "").upper())
+            print(f"  {'PASS' if na_ok else 'FAIL'}  gate pass not approved -> rejected ({rna.get('message')!r})")
+
+        gp = frappe.get_doc({"doctype": "Gate Pass", "person_type": "Employee", "person": emp,
+                             "plant_section": section, "reason": "scan test",
+                             "expected_out_time": frappe.utils.now_datetime(),
+                             "expected_return_time": frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=3)})
+        gp.insert(ignore_permissions=True)
+        created.append(("Gate Pass", gp.name))
+        apply_workflow(gp, "Approve")
+        gk = S.qr_key("Gate Pass", gp.name)
+        ro = S.scan(gk)
+        print(f"  {'PASS' if ro.get('action') == 'GATE_PASS_OUT' and frappe.db.get_value('Gate Pass', gp.name, 'pass_status') == 'Out' else 'FAIL'}  approved pass scan -> OUT")
+        rr = S.scan(gk)
+        print(f"  {'PASS' if rr.get('action') == 'GATE_PASS_RETURN' and frappe.db.get_value('Gate Pass', gp.name, 'pass_status') == 'Returned' else 'FAIL'}  return scan -> RETURNED")
+
+        # 6) Visitor: scan closes the log
+        vl = frappe.get_doc({"doctype": "Visitor Log", "visitor_name": "Scan Test Visitor",
+                             "plant_section": section, "time_in": frappe.utils.now_datetime()}).insert(ignore_permissions=True)
+        created.append(("Visitor Log", vl.name))
+        rv = S.scan(S.qr_key("Visitor Log", vl.name))
+        vout = rv.get("action") == "VISITOR_OUT" and frappe.db.get_value("Visitor Log", vl.name, "time_out")
+        print(f"  {'PASS' if vout else 'FAIL'}  visitor scan -> signed OUT (time_out set: {bool(vout)})")
+    except Exception as e:
+        print(f"  FAIL  scan loop: {e}")
+    finally:
+        for dt, nm in reversed(created):
+            _safe_cancel_delete(dt, nm)
+        frappe.db.commit()
+
+
 def _material_request_lifecycle():
     """Self-contained + idempotent: raise a dedicated MR (qty 20), approve it,
     partially issue (12) -> Partially Issued, fully issue (8) -> Issued, then
@@ -466,6 +576,8 @@ def run():
     # ---------------- Material Request lifecycle (partial -> full -> close) ----------------
     print("\n--- MATERIAL REQUEST LIFECYCLE ---")
     _material_request_lifecycle()
+
+    _scan_loop()
 
     # ---------------- Role -> Workspace visibility ----------------
     print("\n--- WORKSPACE VISIBILITY BY ROLE (sidebar) ---")
