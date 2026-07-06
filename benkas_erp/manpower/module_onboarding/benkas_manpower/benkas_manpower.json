@@ -1,0 +1,38 @@
+{
+ "allow_roles": [
+  {
+   "role": "Gate Security"
+  },
+  {
+   "role": "Section Incharge"
+  },
+  {
+   "role": "Benkas Project Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "creation": "2026-07-06 22:26:01.156099",
+ "docstatus": 0,
+ "doctype": "Module Onboarding",
+ "idx": 0,
+ "is_complete": 0,
+ "modified": "2026-07-06 22:26:01.156099",
+ "modified_by": "Administrator",
+ "module": "Manpower",
+ "name": "Benkas Manpower",
+ "owner": "Administrator",
+ "steps": [
+  {
+   "step": "Benkas - Add a Labour Master"
+  },
+  {
+   "step": "Benkas - Log a Gate Entry at the gate"
+  },
+  {
+   "step": "Benkas - Acknowledge gate entries as Incharge"
+  }
+ ],
+ "title": "Benkas Manpower"
+}

@@ -1,0 +1,19 @@
+{
+ "action": "Create Entry",
+ "creation": "2026-07-06 22:26:01.277828",
+ "docstatus": 0,
+ "doctype": "Onboarding Step",
+ "idx": 0,
+ "is_complete": 0,
+ "is_single": 0,
+ "is_skipped": 0,
+ "modified": "2026-07-06 22:26:01.277828",
+ "modified_by": "Administrator",
+ "name": "Benkas - Add Labour",
+ "owner": "Administrator",
+ "reference_document": "Labour Master",
+ "show_form_tour": 0,
+ "show_full_form": 0,
+ "title": "Add Labour",
+ "validate_action": 1
+}

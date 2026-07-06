@@ -1,0 +1,41 @@
+{
+ "allow_roles": [
+  {
+   "role": "Section Incharge"
+  },
+  {
+   "role": "Safety Officer"
+  },
+  {
+   "role": "Generator Electrical Operator"
+  },
+  {
+   "role": "Benkas Project Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "creation": "2026-07-06 22:26:01.249840",
+ "docstatus": 0,
+ "doctype": "Module Onboarding",
+ "idx": 0,
+ "is_complete": 0,
+ "modified": "2026-07-06 22:26:01.249840",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Benkas Site Safety",
+ "owner": "Administrator",
+ "steps": [
+  {
+   "step": "Benkas - Log a Visitor"
+  },
+  {
+   "step": "Benkas - Raise a Safety Work Permit"
+  },
+  {
+   "step": "Benkas - Log a Safety Violation (if any)"
+  }
+ ],
+ "title": "Benkas Site Safety"
+}

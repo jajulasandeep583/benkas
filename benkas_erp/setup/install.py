@@ -27,16 +27,16 @@ def _doctypes_ready():
 def setup_all():
     from benkas_erp.setup import (
         roles, custom_fields, permissions, workflows, notifications,
-        reports, workspaces, print_formats, activities,
+        reports, workspaces, print_formats, activities, onboarding, field_help,
     )
 
     roles.create_roles()
     frappe.db.commit()
 
     if _doctypes_ready():
-        for step in (custom_fields.create, permissions.apply,
+        for step in (custom_fields.create, field_help.apply, permissions.apply,
                      workflows.create_workflows, notifications.create_notifications,
                      reports.create_reports, activities.seed_activities,
-                     workspaces.create, print_formats.create):
+                     onboarding.create, workspaces.create, print_formats.create):
             step()
             frappe.db.commit()

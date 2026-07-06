@@ -189,6 +189,54 @@ def run():
           f"total_subtasks={total} sections={len(per_section)} "
           f"each9={counts_ok} orphans={orphans} dup_sections={dups}")
 
+    # ---------------- Placement: every custom DocType has a home ----------------
+    print("\n--- WORKSPACE PLACEMENT (doctype homes / report links / icons) ---")
+    ws_names = list(WS_EXPECT.keys())
+    # map: doctype -> [workspaces where it's a DocType shortcut]
+    dt_homes, rp_homes = {}, {}
+    icons_ok = True
+    for w in ws_names:
+        if not frappe.db.exists("Workspace", w):
+            continue
+        doc = frappe.get_doc("Workspace", w)
+        if not doc.icon:
+            icons_ok = False
+        for s in doc.shortcuts:
+            if s.type == "DocType":
+                dt_homes.setdefault(s.link_to, []).append(w)
+            elif s.type == "Report":
+                rp_homes.setdefault(s.link_to, []).append(w)
+
+    custom_parents = frappe.get_all("DocType", filters={
+        "module": ["in", MODULES], "istable": 0}, pluck="name")
+    orphans = [d for d in custom_parents if d not in dt_homes]
+    multi = {d: hs for d, hs in dt_homes.items() if d in custom_parents and len(hs) > 1}
+    print(f"  {'PASS' if not orphans else 'FAIL'}  every custom DocType has a home shortcut "
+          f"({len(custom_parents)} parents) {'' if not orphans else 'ORPHANS: ' + str(orphans)}")
+    print(f"  {'PASS' if not multi else 'FAIL'}  each custom DocType home is exactly one workspace "
+          f"{'' if not multi else 'MULTI: ' + str(multi)}")
+
+    reports = frappe.get_all("Report", filters={"module": ["in", MODULES]}, pluck="name")
+    unlinked = [r for r in reports if r not in rp_homes]
+    print(f"  {'PASS' if not unlinked else 'FAIL'}  every report linked on a workspace "
+          f"({len(reports)} reports) {'' if not unlinked else 'UNLINKED: ' + str(unlinked)}")
+    print(f"  {'PASS' if icons_ok else 'FAIL'}  all 6 workspaces have a non-empty icon")
+
+    # intro + onboarding blocks present
+    import json as _json
+    intro_bad, onb_bad = [], []
+    for w in ws_names:
+        blocks = _json.loads(frappe.db.get_value("Workspace", w, "content") or "[]")
+        types = [b.get("type") for b in blocks]
+        if "paragraph" not in types:
+            intro_bad.append(w)
+        if w != "Benkas MIS" and "onboarding" not in types:
+            onb_bad.append(w)
+    print(f"  {'PASS' if not intro_bad else 'FAIL'}  intro paragraph on every workspace "
+          f"{'' if not intro_bad else 'MISSING: ' + str(intro_bad)}")
+    print(f"  {'PASS' if not onb_bad else 'FAIL'}  onboarding block on 5 operational workspaces "
+          f"{'' if not onb_bad else 'MISSING: ' + str(onb_bad)}")
+
     # ---------------- Daily Progress Log end-to-end flow ----------------
     print("\n--- DAILY PROGRESS LOG (single site-log flow) ---")
     dpl_name = frappe.db.get_value("Daily Progress Log", {"docstatus": 1}, "name")

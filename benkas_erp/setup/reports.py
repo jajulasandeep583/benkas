@@ -198,6 +198,23 @@ ORDER BY parent.subject, t.subject
 """,
     },
     {
+        "name": "Weekly Section MIS", "ref_doctype": "Daily Progress Log", "module": "Work Schedule",
+        "query": """
+SELECT
+  ps.section_name           AS "Section:Data:170",
+  COUNT(DISTINCT dpl.name)   AS "Logs (last 7d):Int:110",
+  MAX(dtp.percent_complete)  AS "Latest Reported:Percent:150",
+  MAX(dpl.log_date)          AS "Last Log:Date:110"
+FROM `tabPlant Section` ps
+LEFT JOIN `tabDaily Progress Log` dpl
+       ON dpl.plant_section = ps.name AND dpl.docstatus = 1
+      AND dpl.log_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+LEFT JOIN `tabDaily Task Progress` dtp ON dtp.parent = dpl.name
+GROUP BY ps.name
+ORDER BY ps.section_name
+""",
+    },
+    {
         "name": "Safety Violations by Contractor", "ref_doctype": "Safety Violation Log",
         "module": "Site Safety Assets",
         "query": """

@@ -1,0 +1,19 @@
+{
+ "action": "Create Entry",
+ "creation": "2026-07-06 22:26:01.242071",
+ "docstatus": 0,
+ "doctype": "Onboarding Step",
+ "idx": 0,
+ "is_complete": 0,
+ "is_single": 0,
+ "is_skipped": 0,
+ "modified": "2026-07-06 22:26:01.242071",
+ "modified_by": "Administrator",
+ "name": "Benkas - Log a Safety Violation (if any)",
+ "owner": "Administrator",
+ "reference_document": "Safety Violation Log",
+ "show_form_tour": 0,
+ "show_full_form": 0,
+ "title": "Log a Safety Violation (if any)",
+ "validate_action": 1
+}

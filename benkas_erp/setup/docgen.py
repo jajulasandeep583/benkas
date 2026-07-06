@@ -17,6 +17,19 @@ STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspecti
 WIN_OUT = "/mnt/c/Users/jajul/Downloads/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-06", "Workspace completeness & polish", [
+        "Workspaces now UPSERT (icon/colour/content/blocks re-applied on every migrate) — "
+        "fixed the skip-if-exists bug that stopped icon fixes landing.",
+        "Full DocType->workspace placement: all 18 custom parent doctypes have exactly one "
+        "home shortcut; masters referenced elsewhere via link cards. No orphans.",
+        "All 14 reports linked on their owning workspace; added Weekly Section MIS.",
+        "Intro paragraph on all 6 workspaces; native Module Onboarding (5 steps flows) on "
+        "the 5 operational workspaces.",
+        "Plain-language field help (descriptions) on Gate Entry, Daily Progress Log + child "
+        "tables, permits, gate pass, safety/visitor logs, material request.",
+        "Icons validated against Frappe's Lucide set (users/truck/calendar/shield/settings/"
+        "layout-dashboard); colours per spec.",
+    ]),
     ("2026-07-06", "Daily Progress Log -> single end-to-end site log", [
         "Restructured Daily Progress Log into one submittable site log per section/day "
         "with 3 child tables: Task Progress, Workers Present, Material Consumed.",

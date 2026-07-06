@@ -1,0 +1,38 @@
+{
+ "allow_roles": [
+  {
+   "role": "Gate Security"
+  },
+  {
+   "role": "Stores Weighbridge Operator"
+  },
+  {
+   "role": "Benkas Project Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "creation": "2026-07-06 22:26:01.192128",
+ "docstatus": 0,
+ "doctype": "Module Onboarding",
+ "idx": 0,
+ "is_complete": 0,
+ "modified": "2026-07-06 22:26:01.192128",
+ "modified_by": "Administrator",
+ "module": "Material",
+ "name": "Benkas Material",
+ "owner": "Administrator",
+ "steps": [
+  {
+   "step": "Benkas - Raise a Material Request"
+  },
+  {
+   "step": "Benkas - Create a Purchase Receipt (GRN)"
+  },
+  {
+   "step": "Benkas - Run a Quality Inspection"
+  }
+ ],
+ "title": "Benkas Material"
+}
