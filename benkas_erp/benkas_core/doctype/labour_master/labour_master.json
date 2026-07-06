@@ -1,0 +1,106 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "LM-.#####",
+ "creation": "2026-07-06 19:45:45.768132",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "labour_name",
+  "contractor",
+  "category",
+  "status",
+  "cb1",
+  "id_proof_type",
+  "id_proof_no",
+  "photo",
+  "id_card_barcode"
+ ],
+ "fields": [
+  {
+   "fieldname": "labour_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Labour Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "contractor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Contractor",
+   "options": "Contractor"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Category",
+   "options": "Skilled\nSemi-skilled\nUnskilled"
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Active\nInactive\nExited"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "id_proof_type",
+   "fieldtype": "Select",
+   "label": "ID Proof Type",
+   "options": "Aadhaar\nPAN\nVoter ID\nDriving License\nOther"
+  },
+  {
+   "fieldname": "id_proof_no",
+   "fieldtype": "Data",
+   "label": "ID Proof No"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  },
+  {
+   "fieldname": "id_card_barcode",
+   "fieldtype": "Barcode",
+   "label": "ID Card Barcode"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:45.768132",
+ "modified_by": "Administrator",
+ "module": "Benkas Core",
+ "name": "Labour Master",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "labour_name",
+ "track_changes": 1
+}

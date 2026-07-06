@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "field:section_code",
+ "creation": "2026-07-06 19:45:44.843962",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_name",
+  "section_code",
+  "is_active",
+  "cb1",
+  "warehouse",
+  "project_task",
+  "cost_center",
+  "incharge"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Section Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Section Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "project_task",
+   "fieldtype": "Link",
+   "label": "Project Task",
+   "options": "Task"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "incharge",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Incharge",
+   "options": "User"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:44.843962",
+ "modified_by": "Administrator",
+ "module": "Benkas Core",
+ "name": "Plant Section",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "section_name",
+ "track_changes": 1
+}

@@ -1,0 +1,163 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "GE-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:46.437602",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "person_type",
+  "person",
+  "plant_section",
+  "entry_type",
+  "cb1",
+  "time_in",
+  "time_out",
+  "override_reason",
+  "vehicle_no",
+  "gate_pass",
+  "sb_work",
+  "work_description",
+  "photo",
+  "ppe_checklist",
+  "sb_ack",
+  "acknowledgement_status",
+  "dispute_remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "person_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Person Type",
+   "options": "Employee\nContractor\nLabour Master",
+   "reqd": 1
+  },
+  {
+   "fieldname": "person",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Person",
+   "options": "person_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Plant Section",
+   "options": "Plant Section",
+   "reqd": 1
+  },
+  {
+   "default": "In",
+   "fieldname": "entry_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Entry Type",
+   "options": "In\nOut",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "time_in",
+   "fieldtype": "Datetime",
+   "label": "Time In"
+  },
+  {
+   "fieldname": "time_out",
+   "fieldtype": "Datetime",
+   "label": "Time Out"
+  },
+  {
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Manual Override Reason"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "label": "Vehicle No"
+  },
+  {
+   "fieldname": "gate_pass",
+   "fieldtype": "Link",
+   "label": "Gate Pass",
+   "options": "Gate Pass"
+  },
+  {
+   "fieldname": "sb_work",
+   "fieldtype": "Section Break",
+   "label": "Work & Safety"
+  },
+  {
+   "fieldname": "work_description",
+   "fieldtype": "Small Text",
+   "label": "Work Description"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Gate Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ppe_checklist",
+   "fieldtype": "Table",
+   "label": "PPE Checklist",
+   "options": "Gate Entry PPE Item"
+  },
+  {
+   "fieldname": "sb_ack",
+   "fieldtype": "Section Break",
+   "label": "Acknowledgement"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "acknowledgement_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Acknowledgement Status",
+   "options": "Pending\nConfirmed\nDisputed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dispute_remarks",
+   "fieldtype": "Small Text",
+   "label": "Dispute Remarks"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:46.437602",
+ "modified_by": "Administrator",
+ "module": "Manpower",
+ "name": "Gate Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

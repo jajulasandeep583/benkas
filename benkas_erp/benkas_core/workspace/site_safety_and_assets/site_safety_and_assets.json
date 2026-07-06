@@ -1,0 +1,245 @@
+{
+ "app": "benkas_erp",
+ "charts": [
+  {
+   "chart_name": "Benkas Violations by Section",
+   "label": "Benkas Violations by Section"
+  },
+  {
+   "chart_name": "Benkas Permit Status",
+   "label": "Benkas Permit Status"
+  }
+ ],
+ "content": "[{\"id\": \"hdr\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Site Safety and Assets</b></span>\", \"col\": 12}}, {\"id\": \"nc_open_violations\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Open Safety Violations\", \"col\": 3}}, {\"id\": \"nc_active_permits\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Active Safety Permits\", \"col\": 3}}, {\"id\": \"nc_tool_mismatch\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Tool Mismatches\", \"col\": 3}}, {\"id\": \"ch_violations_section\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Benkas Violations by Section\", \"col\": 6}}, {\"id\": \"ch_permit_status\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Benkas Permit Status\", \"col\": 6}}, {\"id\": \"sc_Visitor \", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Visitor Log\", \"col\": 3}}, {\"id\": \"sc_Safety V\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Safety Violation Log\", \"col\": 3}}, {\"id\": \"sc_Safety W\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Safety Work Permit\", \"col\": 3}}, {\"id\": \"sc_Electric\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Electrical Work Permit\", \"col\": 3}}, {\"id\": \"sc_Contract\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Contractor Tools Register\", \"col\": 3}}, {\"id\": \"sc_Generato\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Generator Log\", \"col\": 3}}, {\"id\": \"sc_Site Veh\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Site Vehicle Log\", \"col\": 3}}, {\"id\": \"sc_Power Co\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Power Consumption Log\", \"col\": 3}}, {\"id\": \"sc_Safety V\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Safety Violations by Contractor\", \"col\": 3}}, {\"id\": \"sc_Vehicle \", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Vehicle Utilisation\", \"col\": 3}}, {\"id\": \"sc_Generato\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Generator Consumption MIS\", \"col\": 3}}, {\"id\": \"cd_Safety\", \"type\": \"card\", \"data\": {\"card_name\": \"Safety\", \"col\": 4}}, {\"id\": \"cd_Assets &\", \"type\": \"card\", \"data\": {\"card_name\": \"Assets & Utility\", \"col\": 4}}]",
+ "creation": "2026-07-06 20:39:04.057306",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "shield",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Site Safety and Assets",
+ "link_type": "DocType",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Safety",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Safety Violation Log",
+   "link_count": 0,
+   "link_to": "Safety Violation Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Safety Work Permit",
+   "link_count": 0,
+   "link_to": "Safety Work Permit",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Electrical Work Permit",
+   "link_count": 0,
+   "link_to": "Electrical Work Permit",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Assets & Utility",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Generator Log",
+   "link_count": 0,
+   "link_to": "Generator Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Power Consumption Log",
+   "link_count": 0,
+   "link_to": "Power Consumption Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Site Vehicle Log",
+   "link_count": 0,
+   "link_to": "Site Vehicle Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Contractor Tools Register",
+   "link_count": 0,
+   "link_to": "Contractor Tools Register",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Visitor Log",
+   "link_count": 0,
+   "link_to": "Visitor Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-06 20:39:04.057306",
+ "modified_by": "Administrator",
+ "module": "Benkas Core",
+ "name": "Site Safety and Assets",
+ "number_cards": [
+  {
+   "number_card_name": "Open Safety Violations"
+  },
+  {
+   "number_card_name": "Active Safety Permits"
+  },
+  {
+   "number_card_name": "Tool Mismatches"
+  }
+ ],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Section Incharge"
+  },
+  {
+   "role": "Safety Officer"
+  },
+  {
+   "role": "Generator Electrical Operator"
+  },
+  {
+   "role": "Benkas Project Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 4.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Visitor Log",
+   "link_to": "Visitor Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Safety Violation Log",
+   "link_to": "Safety Violation Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Safety Work Permit",
+   "link_to": "Safety Work Permit",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Electrical Work Permit",
+   "link_to": "Electrical Work Permit",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Contractor Tools Register",
+   "link_to": "Contractor Tools Register",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Generator Log",
+   "link_to": "Generator Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Site Vehicle Log",
+   "link_to": "Site Vehicle Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Power Consumption Log",
+   "link_to": "Power Consumption Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "label": "Safety Violations by Contractor",
+   "link_to": "Safety Violations by Contractor",
+   "report_ref_doctype": "Safety Violation Log",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "label": "Vehicle Utilisation",
+   "link_to": "Vehicle Utilisation",
+   "report_ref_doctype": "Site Vehicle Log",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "label": "Generator Consumption MIS",
+   "link_to": "Generator Consumption MIS",
+   "report_ref_doctype": "Generator Log",
+   "type": "Report"
+  }
+ ],
+ "title": "Site Safety and Assets",
+ "type": "Workspace"
+}

@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "SVL-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:47.224958",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "violation_type",
+  "person_type",
+  "person",
+  "plant_section",
+  "cb1",
+  "violation_datetime",
+  "photo",
+  "corrective_action",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "violation_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Violation Type",
+   "options": "No Helmet\nNo Safety Shoes\nNo Harness\nUnsafe Act\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "person_type",
+   "fieldtype": "Select",
+   "label": "Person Type",
+   "options": "Employee\nContractor\nLabour Master"
+  },
+  {
+   "fieldname": "person",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Person",
+   "options": "person_type"
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Plant Section",
+   "options": "Plant Section"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "now",
+   "fieldname": "violation_datetime",
+   "fieldtype": "Datetime",
+   "label": "Violation Datetime"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "corrective_action",
+   "fieldtype": "Small Text",
+   "label": "Corrective Action"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Open\nCorrected"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:47.224958",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Safety Violation Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

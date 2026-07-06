@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "field:vehicle_no",
+ "creation": "2026-07-06 19:45:46.121409",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "vehicle_no",
+  "vehicle_type",
+  "cb1",
+  "owner_type",
+  "assigned_driver"
+ ],
+ "fields": [
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Vehicle No",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "vehicle_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Vehicle Type",
+   "options": "Jeep\nPickup\nForklift\nCrane\nTempo\nTwo Wheeler\nOther"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "owner_type",
+   "fieldtype": "Select",
+   "label": "Owner Type",
+   "options": "Company\nBenkas\nContractor"
+  },
+  {
+   "fieldname": "assigned_driver",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Assigned Driver"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:46.121409",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Site Vehicle",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "PCL-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:46.997484",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "log_date",
+  "shift",
+  "plant_section",
+  "reading_by",
+  "cb1",
+  "r_phase",
+  "y_phase",
+  "b_phase",
+  "voltage"
+ ],
+ "fields": [
+  {
+   "default": "Today",
+   "fieldname": "log_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Log Date"
+  },
+  {
+   "fieldname": "shift",
+   "fieldtype": "Select",
+   "label": "Shift",
+   "options": "Day\nNight\nGeneral"
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Plant Section",
+   "options": "Plant Section"
+  },
+  {
+   "fieldname": "reading_by",
+   "fieldtype": "Link",
+   "label": "Reading By",
+   "options": "User"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "r_phase",
+   "fieldtype": "Float",
+   "label": "R Phase (A)"
+  },
+  {
+   "fieldname": "y_phase",
+   "fieldtype": "Float",
+   "label": "Y Phase (A)"
+  },
+  {
+   "fieldname": "b_phase",
+   "fieldtype": "Float",
+   "label": "B Phase (A)"
+  },
+  {
+   "fieldname": "voltage",
+   "fieldtype": "Float",
+   "label": "Voltage (V)"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:46.997484",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Power Consumption Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

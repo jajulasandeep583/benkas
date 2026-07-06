@@ -1,0 +1,127 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "DPL-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:47.829914",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "task",
+  "plant_section",
+  "log_date",
+  "percent_complete",
+  "cb1",
+  "manpower_deployed",
+  "material_consumed_value",
+  "delay_reason",
+  "sb_desc",
+  "activity_description",
+  "remarks",
+  "photos"
+ ],
+ "fields": [
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task",
+   "options": "Task",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Plant Section",
+   "options": "Plant Section",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "log_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Log Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "percent_complete",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Percent Complete"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "manpower_deployed",
+   "fieldtype": "Int",
+   "label": "Manpower Deployed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "material_consumed_value",
+   "fieldtype": "Currency",
+   "label": "Material Consumed Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delay_reason",
+   "fieldtype": "Link",
+   "label": "Delay Reason",
+   "options": "Delay Reason"
+  },
+  {
+   "fieldname": "sb_desc",
+   "fieldtype": "Section Break",
+   "label": "Activity"
+  },
+  {
+   "fieldname": "activity_description",
+   "fieldtype": "Small Text",
+   "label": "Activity Description"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Photos",
+   "options": "Daily Progress Photo"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:47.829914",
+ "modified_by": "Administrator",
+ "module": "Work Schedule",
+ "name": "Daily Progress Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "CTR-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:46.561065",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "contractor",
+  "tool_description",
+  "qty",
+  "qty_returned",
+  "cb1",
+  "gate_entry_in",
+  "gate_entry_out",
+  "status",
+  "photo"
+ ],
+ "fields": [
+  {
+   "fieldname": "contractor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Contractor",
+   "options": "Contractor",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tool_description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Tool Description"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "label": "Qty In"
+  },
+  {
+   "fieldname": "qty_returned",
+   "fieldtype": "Int",
+   "label": "Qty Returned"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gate_entry_in",
+   "fieldtype": "Link",
+   "label": "Gate Entry In",
+   "options": "Gate Entry"
+  },
+  {
+   "fieldname": "gate_entry_out",
+   "fieldtype": "Link",
+   "label": "Gate Entry Out",
+   "options": "Gate Entry"
+  },
+  {
+   "default": "In",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "In\nReturned\nMismatch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:46.561065",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Contractor Tools Register",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

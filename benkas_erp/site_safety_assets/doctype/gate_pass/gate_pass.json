@@ -1,0 +1,129 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "GP-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:46.313670",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "person_type",
+  "person",
+  "plant_section",
+  "reason",
+  "destination",
+  "cb1",
+  "expected_out_time",
+  "expected_return_time",
+  "actual_out_time",
+  "actual_return_time",
+  "sb_status",
+  "pass_status",
+  "barcode"
+ ],
+ "fields": [
+  {
+   "fieldname": "person_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Person Type",
+   "options": "Employee\nContractor\nLabour Master",
+   "reqd": 1
+  },
+  {
+   "fieldname": "person",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Person",
+   "options": "person_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "label": "Plant Section",
+   "options": "Plant Section"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "destination",
+   "fieldtype": "Data",
+   "label": "Destination"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expected_out_time",
+   "fieldtype": "Datetime",
+   "label": "Expected Out Time"
+  },
+  {
+   "fieldname": "expected_return_time",
+   "fieldtype": "Datetime",
+   "label": "Expected Return Time"
+  },
+  {
+   "fieldname": "actual_out_time",
+   "fieldtype": "Datetime",
+   "label": "Actual Out Time"
+  },
+  {
+   "fieldname": "actual_return_time",
+   "fieldtype": "Datetime",
+   "label": "Actual Return Time"
+  },
+  {
+   "fieldname": "sb_status",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "Requested",
+   "fieldname": "pass_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Pass Status",
+   "options": "Requested\nApproved\nOut\nReturned\nOverdue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "barcode",
+   "fieldtype": "Barcode",
+   "label": "Barcode"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:46.313670",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Gate Pass",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

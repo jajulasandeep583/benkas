@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "VIS-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:47.119268",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "visitor_name",
+  "company",
+  "purpose",
+  "plant_section",
+  "host_person",
+  "cb1",
+  "time_in",
+  "time_out",
+  "photo",
+  "visitor_slip",
+  "acknowledgement_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "visitor_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Visitor Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Company"
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Small Text",
+   "label": "Purpose"
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "label": "Plant Section",
+   "options": "Plant Section"
+  },
+  {
+   "fieldname": "host_person",
+   "fieldtype": "Link",
+   "label": "Host Person",
+   "options": "User"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "time_in",
+   "fieldtype": "Datetime",
+   "label": "Time In"
+  },
+  {
+   "fieldname": "time_out",
+   "fieldtype": "Datetime",
+   "label": "Time Out"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  },
+  {
+   "fieldname": "visitor_slip",
+   "fieldtype": "Barcode",
+   "label": "Visitor Slip"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "acknowledgement_status",
+   "fieldtype": "Select",
+   "label": "Acknowledgement Status",
+   "options": "Pending\nConfirmed\nDisputed"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:47.119268",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Visitor Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "visitor_name",
+ "track_changes": 1
+}

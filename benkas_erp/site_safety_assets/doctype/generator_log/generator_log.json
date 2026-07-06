@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "GL-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:46.800166",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "generator",
+  "plant_section",
+  "log_date",
+  "shift",
+  "cb1",
+  "start_time",
+  "stop_time",
+  "running_hours",
+  "sb_fuel",
+  "opening_meter",
+  "closing_meter",
+  "diesel_filled",
+  "cb2",
+  "diesel_balance",
+  "consumption_rate",
+  "fuel_slip_photo"
+ ],
+ "fields": [
+  {
+   "fieldname": "generator",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Generator",
+   "options": "Generator Master",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "label": "Plant Section",
+   "options": "Plant Section"
+  },
+  {
+   "default": "Today",
+   "fieldname": "log_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Log Date"
+  },
+  {
+   "fieldname": "shift",
+   "fieldtype": "Select",
+   "label": "Shift",
+   "options": "Day\nNight\nGeneral"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "stop_time",
+   "fieldtype": "Datetime",
+   "label": "Stop Time"
+  },
+  {
+   "fieldname": "running_hours",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Running Hours",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_fuel",
+   "fieldtype": "Section Break",
+   "label": "Fuel & Meter"
+  },
+  {
+   "fieldname": "opening_meter",
+   "fieldtype": "Float",
+   "label": "Opening Meter"
+  },
+  {
+   "fieldname": "closing_meter",
+   "fieldtype": "Float",
+   "label": "Closing Meter"
+  },
+  {
+   "fieldname": "diesel_filled",
+   "fieldtype": "Float",
+   "label": "Diesel Filled (L)"
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "diesel_balance",
+   "fieldtype": "Float",
+   "label": "Diesel Balance (L)"
+  },
+  {
+   "fieldname": "consumption_rate",
+   "fieldtype": "Float",
+   "label": "Consumption Rate (L/hr)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fuel_slip_photo",
+   "fieldtype": "Attach Image",
+   "label": "Fuel Slip Photo"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:46.800166",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Generator Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

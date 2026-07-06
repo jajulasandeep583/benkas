@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "SWP-.YYYY.-.#####",
+ "creation": "2026-07-06 19:45:47.413371",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "permit_type",
+  "plant_section",
+  "work_description",
+  "workers_involved",
+  "cb1",
+  "valid_from",
+  "valid_to",
+  "issuing_incharge",
+  "approving_incharge",
+  "sb_photos",
+  "site_photo",
+  "ppe_photo",
+  "barricading_photo",
+  "sb_status",
+  "permit_status",
+  "closing_confirmation"
+ ],
+ "fields": [
+  {
+   "fieldname": "permit_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Permit Type",
+   "options": "Hot Work\nWork at Height\nConfined Space\nExcavation\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plant_section",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Plant Section",
+   "options": "Plant Section"
+  },
+  {
+   "fieldname": "work_description",
+   "fieldtype": "Small Text",
+   "label": "Work Description"
+  },
+  {
+   "fieldname": "workers_involved",
+   "fieldtype": "Table",
+   "label": "Workers Involved",
+   "options": "Safety Work Permit Worker"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Datetime",
+   "label": "Valid From"
+  },
+  {
+   "fieldname": "valid_to",
+   "fieldtype": "Datetime",
+   "label": "Valid To"
+  },
+  {
+   "fieldname": "issuing_incharge",
+   "fieldtype": "Link",
+   "label": "Issuing Incharge",
+   "options": "User"
+  },
+  {
+   "fieldname": "approving_incharge",
+   "fieldtype": "Link",
+   "label": "Approving Incharge",
+   "options": "User"
+  },
+  {
+   "fieldname": "sb_photos",
+   "fieldtype": "Section Break",
+   "label": "Mandatory Photos"
+  },
+  {
+   "fieldname": "site_photo",
+   "fieldtype": "Attach Image",
+   "label": "Site/Area Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ppe_photo",
+   "fieldtype": "Attach Image",
+   "label": "PPE-in-use Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "barricading_photo",
+   "fieldtype": "Attach Image",
+   "label": "Barricading/Fire-watch Photo"
+  },
+  {
+   "fieldname": "sb_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Requested",
+   "fieldname": "permit_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Permit Status",
+   "options": "Requested\nApproved\nWork in Progress\nClosed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "closing_confirmation",
+   "fieldtype": "Check",
+   "label": "Closing Confirmation"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 19:45:47.413371",
+ "modified_by": "Administrator",
+ "module": "Site Safety Assets",
+ "name": "Safety Work Permit",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
