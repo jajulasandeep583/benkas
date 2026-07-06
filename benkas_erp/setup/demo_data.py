@@ -65,7 +65,8 @@ def _gate_entry(ptype, person, section, minutes_ago, work):
 def reset():
     """Cancel + delete transactional demo data so it can be regenerated cleanly
     against the current schema (used when doctype fields/workflows change)."""
-    for dt in ["Daily Progress Log", "Stock Entry", "Material Request", "Quality Inspection"]:
+    for dt in ["Daily Progress Log", "Stock Entry", "Material Request", "Quality Inspection",
+               "Gate Entry"]:
         for name in frappe.get_all(dt, pluck="name", order_by="creation desc"):
             try:
                 doc = frappe.get_doc(dt, name)

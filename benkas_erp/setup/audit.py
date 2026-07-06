@@ -87,11 +87,20 @@ def _material_request_lifecycle():
     wh = frappe.db.get_value("Plant Section", "DIST", "warehouse")
     dparent = frappe.db.get_value("Plant Section", "DIST", "project_task")
     erection = frappe.db.get_value("Task", {"subject": "DIST - Structural / Erection", "parent_task": dparent}, "name")
-    ravi = frappe.db.get_value("Employee", {"employee_name": "Ravi Kumar"}, "name")
     item = "BK-CEMENT-OPC53"
-    if not (wh and erection and ravi and frappe.db.exists("Item", item)):
+    worker = frappe.db.get_value("Employee", {}, "name")
+    if not (wh and erection and worker and frappe.db.exists("Item", item)):
         print("  WARN  lifecycle prerequisites missing")
         return
+    log_date = today()
+
+    # self-contained: give the worker a gate entry for TODAY so the worker-gate-entry
+    # validation passes and the issue date matches today's stock receipt.
+    ge_name = frappe.get_doc({
+        "doctype": "Gate Entry", "person_type": "Employee", "person": worker,
+        "plant_section": "DIST", "entry_type": "In", "time_in": frappe.utils.now_datetime(),
+        "photo": "/assets/frappe/images/ui/avatar.png",
+    }).insert(ignore_permissions=True).name
 
     logs = []
 
@@ -99,9 +108,10 @@ def _material_request_lifecycle():
         # intentionally NO task_progress row — this test must not mutate the demo
         # task's progress (cancel wouldn't revert it), only issue material.
         d = frappe.get_doc({
-            "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": today(),
+            "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": log_date,
             "incharge": "Administrator",
-            "workers_present": [{"person_type": "Employee", "person": ravi, "task": erection, "hours": 8}],
+            "workers_present": [{"person_type": "Employee", "person": worker,
+                                 "task": erection, "hours": 8}],
             "material_consumed": [{"item": item, "qty": qty, "uom": "Nos", "task": erection,
                                    "material_request": mr}],
             "photos": [{"image": "/assets/frappe/images/ui/avatar.png"}],
@@ -143,6 +153,7 @@ def _material_request_lifecycle():
                 _safe_cancel_delete("Stock Entry", se_name)
         if mr:
             _safe_cancel_delete("Material Request", mr.name)
+        _safe_cancel_delete("Gate Entry", ge_name)
         frappe.db.commit()
 
 
@@ -391,15 +402,15 @@ def run():
     print(f"  {'PASS' if not onb_bad else 'FAIL'}  onboarding block on 5 operational workspaces "
           f"{'' if not onb_bad else 'MISSING: ' + str(onb_bad)}")
 
-    # /apps tile: Frappe v16 renders only apps[0] per installed app, so there must
-    # be exactly ONE benkas_erp entry; Benkas Core is reached via a MIS shortcut.
-    tiles = [t for t in _apps_screen_tiles() if t["app"] == "benkas_erp"]
-    tile_ok = len(tiles) == 1 and (tiles[0]["total_entries"] == 1)
-    print(f"  {'PASS' if tile_ok else 'FAIL'}  /apps: exactly one benkas_erp tile (v16 = 1 tile/app) "
-          f"-> {[t['title'] for t in tiles]}")
+    # /apps tiles: v16 renders one tile per installed app; extend_bootinfo injects
+    # the 2nd (Benkas Core). Both must be present in the resulting app_data.
+    benkas = sorted(t["title"] for t in _apps_screen_tiles()
+                    if t["app"] in ("benkas_erp", "benkas_core"))
+    tile_ok = benkas == ["Benkas Core", "Benkas ERP"]
+    print(f"  {'PASS' if tile_ok else 'FAIL'}  /apps: both Benkas tiles present -> {benkas}")
     mis = frappe.get_doc("Workspace", "Benkas MIS")
     setup_sc = any(s.type == "URL" and (s.url or "") == "/app/benkas-core" for s in mis.shortcuts)
-    print(f"  {'PASS' if setup_sc else 'FAIL'}  Benkas Core reachable via 'Setup / Masters' shortcut on Benkas MIS")
+    print(f"  {'PASS' if setup_sc else 'FAIL'}  Benkas Core also reachable via 'Setup / Masters' shortcut on Benkas MIS")
 
     # ---------------- Daily Progress Log end-to-end flow ----------------
     print("\n--- DAILY PROGRESS LOG (single site-log flow) ---")
@@ -474,8 +485,8 @@ def run():
 
 
 def _apps_screen_tiles():
-    """Exactly what boot.py puts in bootinfo.app_data (the /apps grid): the FIRST
-    add_to_apps_screen entry per installed app."""
+    """Reproduce what ends up in bootinfo.app_data (the /apps grid): boot.py's
+    one-entry-per-installed-app PLUS our extend_bootinfo injection."""
     tiles = []
     for app in frappe.get_installed_apps():
         if app == "frappe":
@@ -483,6 +494,10 @@ def _apps_screen_tiles():
         entries = frappe.get_hooks("add_to_apps_screen", app_name=app)
         if entries:
             e = entries[0]
-            tiles.append({"app": app, "title": e.get("title"), "route": e.get("route"),
-                          "total_entries": len(entries)})
-    return tiles
+            tiles.append({"app_name": app, "app_title": e.get("title"),
+                          "app_logo_url": e.get("logo")})
+    boot = frappe._dict(app_data=tiles)
+    from benkas_erp.boot import extend_bootinfo
+    extend_bootinfo(boot)
+    return [{"app": a.get("app_name"), "title": a.get("app_title"),
+             "route": a.get("app_route")} for a in boot.app_data]

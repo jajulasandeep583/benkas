@@ -315,3 +315,11 @@ add_to_apps_screen = [
 
 # Expose helpers to Jinja (print formats)
 jinja = {"methods": ["benkas_erp.utils.qr_data_uri"]}
+
+# The Benkas ERP app tile should land on the MIS dashboard (boot otherwise routes
+# it to the first workspace slug, which isn't necessarily MIS).
+app_home = "/desk/benkas-mis"
+
+# Inject a second /apps tile (Benkas Core) — v16 only renders one tile per
+# installed app from add_to_apps_screen, so we append it after boot builds app_data.
+extend_bootinfo = "benkas_erp.boot.extend_bootinfo"

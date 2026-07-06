@@ -17,6 +17,18 @@ STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspecti
 WIN_OUT = "/mnt/c/Users/jajul/Downloads/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-07", "Benkas Core desktop tile — actually delivered", [
+        "v16 renders the /apps grid from bootinfo.app_data (one entry per installed "
+        "app). Added an extend_bootinfo hook (benkas_erp/boot.py) that appends a second "
+        "tile 'Benkas Core' -> /desk/benkas-core AFTER boot builds app_data.",
+        "Added app_home hook so the 'Benkas ERP' tile lands on the MIS dashboard "
+        "(/desk/benkas-mis) instead of the first workspace slug.",
+        "Verified against the ACTUAL desk page HTML the browser receives (both tiles "
+        "present with distinct routes) — not a backend helper.",
+        "audit.py now applies the real extend_bootinfo and asserts both Benkas tiles; "
+        "MR lifecycle test made fully self-contained (own gate entry, today's date) so "
+        "it survives day-rollover.",
+    ]),
     ("2026-07-06", "Fix /apps tile (root cause: v16 = one tile per app)", [
         "Root cause of the missing 'Benkas Core' tile: Frappe v16 boot.py builds "
         "bootinfo.app_data from apps[0] of add_to_apps_screen per installed app, so a "
