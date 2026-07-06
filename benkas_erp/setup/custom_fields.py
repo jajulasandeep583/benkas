@@ -53,6 +53,23 @@ CUSTOM_FIELDS = {
         {"fieldname": "section_percent_complete", "label": "Section % Complete",
          "fieldtype": "Percent", "read_only": 1, "insert_after": "is_active"},
     ],
+    "Material Request": [
+        {"fieldname": "benkas_site_sb", "label": "Benkas Site Details",
+         "fieldtype": "Section Break", "insert_after": "company"},
+        {"fieldname": "plant_section", "label": "Plant Section", "fieldtype": "Link",
+         "options": "Plant Section", "reqd": 1, "insert_after": "benkas_site_sb",
+         "description": "Which plant area this material is requested for."},
+        {"fieldname": "benkas_task", "label": "Task", "fieldtype": "Link", "options": "Task",
+         "insert_after": "plant_section",
+         "description": "Which sub-task this material is for (only tasks under the selected section)."},
+        {"fieldname": "benkas_site_cb", "fieldtype": "Column Break", "insert_after": "benkas_task"},
+        {"fieldname": "benkas_status", "label": "Benkas Status", "fieldtype": "Select",
+         "options": "Requested\nApproved\nPartially Issued\nIssued\nClosed",
+         "default": "Requested", "read_only": 1, "allow_on_submit": 1,
+         "insert_after": "benkas_site_cb",
+         "description": "Site issue-tracking status, driven by the daily site log — separate "
+                        "from ERPNext's own document status."},
+    ],
 }
 
 

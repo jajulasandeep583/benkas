@@ -17,6 +17,20 @@ STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspecti
 WIN_OUT = "/mnt/c/Users/jajul/Downloads/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-06", "Material Request feature gap closed", [
+        "Extended standard Material Request with plant_section (mandatory), benkas_task, "
+        "and benkas_status — real section/task traceability (not just a bare Link).",
+        "Added 'Material Request Approval' workflow (Requested->Approved manual; Partially "
+        "Issued/Issued auto-set by the site-log issue hook; Closed manual, PM only).",
+        "dpl_hooks now flips benkas_status from issued-vs-requested qty per linked MR.",
+        "New 'Material Request Slip' print format (section, task, status, items, signatures).",
+        "Weekly Section MIS gained an 'Open Material Requests' per-section column.",
+        "Added a second desktop app tile (Benkas Core) alongside Benkas ERP.",
+        "AUDIT PROCESS FIX: audit.py now asserts each specified feature independently "
+        "(custom fields + workflow states/transitions + print renders) and runs a full "
+        "MR lifecycle test (partial -> full -> close). A resolving Link is no longer "
+        "treated as proof a feature was built.",
+    ]),
     ("2026-07-06", "Workspace completeness & polish", [
         "Workspaces now UPSERT (icon/colour/content/blocks re-applied on every migrate) — "
         "fixed the skip-if-exists bug that stopped icon fixes landing.",

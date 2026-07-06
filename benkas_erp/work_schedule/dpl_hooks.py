@@ -112,6 +112,10 @@ def _issue_material(doc):
     se.submit()
     doc.db_set("stock_entry", se.name)
 
+    # flip each linked Material Request's benkas_status based on issued vs requested qty
+    for mr_name in {r.material_request for r in rows if r.material_request}:
+        _update_material_request_status(mr_name)
+
     # accrue material value per task from the submitted stock entry amounts
     amount_by_item = {}
     for sei in se.items:
@@ -126,6 +130,40 @@ def _issue_material(doc):
     for task, val in task_value.items():
         cur = frappe.db.get_value("Task", task, "material_consumed_value") or 0
         frappe.db.set_value("Task", task, "material_consumed_value", cur + val)
+
+
+def _update_material_request_status(mr_name):
+    """Set the Material Request's benkas_status from issued-vs-requested qty:
+    Issued when every item is fully issued, else Partially Issued. Never
+    overrides a manually Closed request. Issued qty is summed from the linked
+    submitted Stock Entry rows (deterministic, not reliant on core side-effects)."""
+    if not frappe.db.exists("Material Request", mr_name):
+        return
+    if not frappe.get_meta("Material Request").get_field("benkas_status"):
+        return
+    if frappe.db.get_value("Material Request", mr_name, "benkas_status") == "Closed":
+        return
+
+    items = frappe.get_all("Material Request Item", filters={"parent": mr_name},
+                           fields=["name", "qty"])
+    if not items:
+        return
+
+    fully, any_issued = True, False
+    for it in items:
+        issued = frappe.db.sql(
+            """SELECT COALESCE(SUM(sed.qty), 0) FROM `tabStock Entry Detail` sed
+               JOIN `tabStock Entry` se ON se.name = sed.parent
+               WHERE sed.material_request_item = %s AND se.docstatus = 1""",
+            it.name)[0][0] or 0
+        if issued > 0:
+            any_issued = True
+        if issued < (it.qty or 0):
+            fully = False
+
+    new_status = "Issued" if fully else ("Partially Issued" if any_issued else None)
+    if new_status:
+        frappe.db.set_value("Material Request", mr_name, "benkas_status", new_status)
 
 
 def _recalc_section(section):

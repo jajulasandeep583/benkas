@@ -204,7 +204,10 @@ SELECT
   ps.section_name           AS "Section:Data:170",
   COUNT(DISTINCT dpl.name)   AS "Logs (last 7d):Int:110",
   MAX(dtp.percent_complete)  AS "Latest Reported:Percent:150",
-  MAX(dpl.log_date)          AS "Last Log:Date:110"
+  MAX(dpl.log_date)          AS "Last Log:Date:110",
+  (SELECT COUNT(*) FROM `tabMaterial Request` mr
+     WHERE mr.plant_section = ps.name AND mr.docstatus < 2
+       AND IFNULL(mr.benkas_status, '') NOT IN ('Issued', 'Closed')) AS "Open Material Requests:Int:160"
 FROM `tabPlant Section` ps
 LEFT JOIN `tabDaily Progress Log` dpl
        ON dpl.plant_section = ps.name AND dpl.docstatus = 1

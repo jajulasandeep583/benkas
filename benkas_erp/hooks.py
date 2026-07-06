@@ -299,14 +299,20 @@ scheduler_events = {
     }
 }
 
-# App tile on the /apps screen
+# App tiles on the /apps screen
 add_to_apps_screen = [
     {
         "name": "benkas_erp",
         "logo": "/assets/frappe/images/frappe-framework-logo.svg",
         "title": "Benkas ERP",
         "route": "/app/benkas-mis",
-    }
+    },
+    {
+        "name": "benkas_core",
+        "logo": "/assets/frappe/images/frappe-framework-logo.svg",
+        "title": "Benkas Core",
+        "route": "/app/benkas-core",
+    },
 ]
 
 # Expose helpers to Jinja (print formats)

@@ -49,6 +49,157 @@ PRINTS = [
 ]
 
 
+# Features that were SPECIFIED with fields + workflow + print — each asserted
+# independently (a Link resolving is NOT proof the feature was built).
+FEATURES = [
+    {"name": "Material Request site tracking", "doctype": "Material Request",
+     "fields": ["plant_section", "benkas_task", "benkas_status"],
+     "workflow": "Material Request Approval",
+     "wf_states": ["Requested", "Approved", "Partially Issued", "Issued", "Closed"],
+     "wf_actions": ["Approve", "Close"], "print": "Material Request Slip"},
+    {"name": "Purchase Receipt weighbridge", "doctype": "Purchase Receipt",
+     "fields": ["plant_section", "gross_weight", "net_weight", "supplier_invoice_photo",
+                "weight_variance_flag"], "workflow": None, "print": None},
+    {"name": "Gate Entry acknowledgement", "doctype": "Gate Entry",
+     "fields": ["plant_section", "photo", "acknowledgement_status"],
+     "workflow": "Gate Entry Acknowledgement", "wf_states": ["Pending", "Confirmed", "Disputed"],
+     "wf_actions": ["Confirm", "Dispute"], "print": "Gate Entry Slip"},
+    {"name": "Safety Work Permit", "doctype": "Safety Work Permit",
+     "fields": ["site_photo", "ppe_photo", "permit_status"],
+     "workflow": "Safety Work Permit Approval",
+     "wf_states": ["Requested", "Approved", "Work in Progress", "Closed"],
+     "wf_actions": ["Approve", "Start Work", "Close"], "print": "Safety Work Permit Print"},
+    {"name": "Electrical Work Permit", "doctype": "Electrical Work Permit",
+     "fields": ["loto_confirmed", "closure_signoff", "permit_status"],
+     "workflow": "Electrical Work Permit Approval",
+     "wf_states": ["Requested", "Approved", "Work in Progress", "Closed"],
+     "wf_actions": ["Approve", "Start Work", "Close"], "print": "Electrical Work Permit Print"},
+]
+
+
+def _material_request_lifecycle():
+    """Self-contained + idempotent: raise a dedicated MR (qty 20), approve it,
+    partially issue (12) -> Partially Issued, fully issue (8) -> Issued, then
+    Close it. Cleans up everything it creates so it can be re-run."""
+    from frappe.model.workflow import apply_workflow
+
+    company = frappe.defaults.get_defaults().get("company") or frappe.db.get_value("Company", {}, "name")
+    wh = frappe.db.get_value("Plant Section", "DIST", "warehouse")
+    dparent = frappe.db.get_value("Plant Section", "DIST", "project_task")
+    erection = frappe.db.get_value("Task", {"subject": "DIST - Structural / Erection", "parent_task": dparent}, "name")
+    ravi = frappe.db.get_value("Employee", {"employee_name": "Ravi Kumar"}, "name")
+    item = "BK-CEMENT-OPC53"
+    if not (wh and erection and ravi and frappe.db.exists("Item", item)):
+        print("  WARN  lifecycle prerequisites missing")
+        return
+
+    logs = []
+
+    def issue(qty, pct, mr):
+        d = frappe.get_doc({
+            "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": today(),
+            "incharge": "Administrator",
+            "task_progress": [{"task": erection, "percent_complete": pct}],
+            "workers_present": [{"person_type": "Employee", "person": ravi, "task": erection, "hours": 8}],
+            "material_consumed": [{"item": item, "qty": qty, "uom": "Nos", "task": erection,
+                                   "material_request": mr}],
+            "photos": [{"image": "/assets/frappe/images/ui/avatar.png"}],
+        })
+        d.insert(ignore_permissions=True)
+        d.submit()
+        logs.append((d.name, d.stock_entry))
+        return d
+
+    mr = None
+    try:
+        mr = frappe.get_doc({
+            "doctype": "Material Request", "material_request_type": "Material Issue",
+            "transaction_date": today(), "company": company, "plant_section": "DIST",
+            "benkas_task": erection,
+            "items": [{"item_code": item, "qty": 20, "uom": "Nos", "warehouse": wh, "schedule_date": today()}],
+        })
+        mr.insert(ignore_permissions=True)
+        apply_workflow(mr, "Approve")
+
+        issue(12, 62, mr.name)
+        st1 = frappe.db.get_value("Material Request", mr.name, "benkas_status")
+        print(f"  {'PASS' if st1 == 'Partially Issued' else 'FAIL'}  partial issue (12/20) -> {st1!r} (expected Partially Issued)")
+
+        issue(8, 68, mr.name)
+        st2 = frappe.db.get_value("Material Request", mr.name, "benkas_status")
+        print(f"  {'PASS' if st2 == 'Issued' else 'FAIL'}  full issue (20/20) -> {st2!r} (expected Issued)")
+
+        apply_workflow(frappe.get_doc("Material Request", mr.name), "Close")
+        st3 = frappe.db.get_value("Material Request", mr.name, "benkas_status")
+        print(f"  {'PASS' if st3 == 'Closed' else 'FAIL'}  manual Close (PM) -> {st3!r} (expected Closed)")
+    except Exception as e:
+        print(f"  FAIL  lifecycle: {e}")
+    finally:
+        # cleanup so the test is idempotent
+        for dpl_name, se_name in logs:
+            _safe_cancel_delete("Daily Progress Log", dpl_name)
+            if se_name:
+                _safe_cancel_delete("Stock Entry", se_name)
+        if mr:
+            _safe_cancel_delete("Material Request", mr.name)
+        frappe.db.commit()
+
+
+def _safe_cancel_delete(dt, name):
+    try:
+        doc = frappe.get_doc(dt, name)
+        if doc.docstatus == 1:
+            doc.flags.ignore_permissions = True
+            if dt == "Material Request":
+                doc.db_set("benkas_status", "Issued")  # allow cancel past Closed guard
+            doc.cancel()
+        frappe.delete_doc(dt, name, force=1, ignore_permissions=True)
+    except Exception:
+        pass
+
+
+def _check_features():
+    print("\n--- FEATURE COMPLETENESS (fields + workflow + print, each asserted) ---")
+    for f in FEATURES:
+        dt = f["doctype"]
+        meta = frappe.get_meta(dt)
+        missing = [x for x in f["fields"] if not meta.get_field(x)]
+        fields_ok = not missing
+
+        wf_ok, wf_note = True, "n/a"
+        if f.get("workflow"):
+            if not frappe.db.exists("Workflow", f["workflow"]):
+                wf_ok, wf_note = False, "workflow missing"
+            else:
+                states = set(frappe.get_all("Workflow Document State",
+                             filters={"parent": f["workflow"]}, pluck="state"))
+                acts = set(frappe.get_all("Workflow Transition",
+                           filters={"parent": f["workflow"]}, pluck="action"))
+                ms = [s for s in f["wf_states"] if s not in states]
+                ma = [a for a in f["wf_actions"] if a not in acts]
+                wf_ok = not ms and not ma
+                wf_note = "ok" if wf_ok else f"missing states={ms} actions={ma}"
+
+        pr_ok, pr_note = True, "n/a"
+        if f.get("print"):
+            if not frappe.db.exists("Print Format", f["print"]):
+                pr_ok, pr_note = False, "print format missing"
+            else:
+                rec = frappe.db.get_value(dt, {}, "name")
+                if not rec:
+                    pr_note = "exists (no record to render)"
+                else:
+                    try:
+                        frappe.get_print(dt, rec, print_format=f["print"])
+                        pr_note = "renders"
+                    except Exception as e:
+                        pr_ok, pr_note = False, f"render error: {e}"
+
+        ok = fields_ok and wf_ok and pr_ok
+        print(f"  {'PASS' if ok else 'FAIL'}  {f['name']:32} "
+              f"fields={'ok' if fields_ok else missing}  wf={wf_note}  print={pr_note}")
+
+
 def _where(raw):
     conds, params = ["1=1"], []
     for f in raw:
@@ -96,6 +247,8 @@ def _chart_groups(ch):
 
 def run():
     print("\n================ BENKAS ERP AUDIT ================\n")
+
+    _check_features()
 
     # ---------------- Workspaces ----------------
     print("--- WORKSPACES ---")
@@ -288,6 +441,10 @@ def run():
         except Exception as e:
             print(f"  FAIL  print render: {e}")
 
+    # ---------------- Material Request lifecycle (partial -> full -> close) ----------------
+    print("\n--- MATERIAL REQUEST LIFECYCLE ---")
+    _material_request_lifecycle()
+
     # ---------------- Role -> Workspace visibility ----------------
     print("\n--- WORKSPACE VISIBILITY BY ROLE (sidebar) ---")
     roles = ["Gate Security", "Section Incharge", "Stores Weighbridge Operator",
@@ -302,3 +459,4 @@ def run():
         print(f"  {role:30} -> {', '.join(visible)}")
 
     print("\n================ END AUDIT ================\n")
+

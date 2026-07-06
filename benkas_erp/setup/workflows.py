@@ -7,6 +7,7 @@ STATES = {
     "Requested": "Warning", "Approved": "Success", "Out": "Info",
     "Returned": "Success", "Overdue": "Danger",
     "Work in Progress": "Info", "Closed": "Success",
+    "Partially Issued": "Info", "Issued": "Success",
 }
 
 ACTIONS = ["Confirm", "Dispute", "Approve", "Mark Out", "Mark Returned",
@@ -35,8 +36,8 @@ def _mk(name, doctype, state_field, states, transitions):
         "override_status": 1,
         "workflow_state_field": state_field,
         "states": [
-            {"state": s, "doc_status": "0", "allow_edit": role}
-            for (s, role) in states
+            {"state": st[0], "doc_status": (st[2] if len(st) > 2 else "0"), "allow_edit": st[1]}
+            for st in states
         ],
         "transitions": [
             {"state": frm, "action": act, "next_state": to,
@@ -90,3 +91,18 @@ def create_workflows():
             ("Work in Progress", "Close", "Closed", "Generator Electrical Operator",
              "doc.closure_signoff"),
         ])
+
+    # Material Request: Requested (draft) -> Approve = submit -> Partially Issued /
+    # Issued are set by the site-log issue hook (not manual) -> Close (PM, when Issued).
+    # doc_status per state keeps benkas_status independent yet consistent with docstatus.
+    if frappe.get_meta("Material Request").get_field("benkas_status"):
+        _mk("Material Request Approval", "Material Request", "benkas_status",
+            states=[("Requested", "Section Incharge", "0"),
+                    ("Approved", "Benkas Project Manager", "1"),
+                    ("Partially Issued", "Benkas Project Manager", "1"),
+                    ("Issued", "Benkas Project Manager", "1"),
+                    ("Closed", "Benkas Project Manager", "1")],
+            transitions=[
+                ("Requested", "Approve", "Approved", "Section Incharge", None),
+                ("Issued", "Close", "Closed", "Benkas Project Manager", None),
+            ])

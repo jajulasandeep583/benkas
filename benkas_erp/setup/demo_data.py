@@ -62,6 +62,23 @@ def _gate_entry(ptype, person, section, minutes_ago, work):
     return doc.name
 
 
+def reset():
+    """Cancel + delete transactional demo data so it can be regenerated cleanly
+    against the current schema (used when doctype fields/workflows change)."""
+    for dt in ["Daily Progress Log", "Stock Entry", "Material Request", "Quality Inspection"]:
+        for name in frappe.get_all(dt, pluck="name", order_by="creation desc"):
+            try:
+                doc = frappe.get_doc(dt, name)
+                if doc.docstatus == 1:
+                    doc.flags.ignore_permissions = True
+                    doc.cancel()
+                frappe.delete_doc(dt, name, force=1, ignore_permissions=True)
+            except Exception:
+                frappe.log_error(frappe.get_traceback(), f"Benkas: reset {dt} {name}")
+    frappe.db.commit()
+    print("reset done")
+
+
 def run():
     made = {}
     company = _company()
@@ -273,25 +290,31 @@ def _material_demo(company):
         se = frappe.get_doc({
             "doctype": "Stock Entry", "stock_entry_type": "Material Receipt",
             "company": company, "plant_section": "DIST", "posting_date": today(),
-            "items": [{"item_code": item_code, "qty": 100, "t_warehouse": warehouse,
+            "items": [{"item_code": item_code, "qty": 500, "t_warehouse": warehouse,
                        "basic_rate": 350, "allow_zero_valuation_rate": 1}],
         })
         se.insert(ignore_permissions=True)
         se.submit()
 
-    # Material Request (Material Issue) so the site log can consume against it
+    # Material Request (Material Issue) against a real section + task, then APPROVE it
+    # via workflow (so benkas_status = Approved). The site log will consume against it.
+    dparent = frappe.db.get_value("Plant Section", "DIST", "project_task")
+    erection = frappe.db.get_value("Task", {"subject": "DIST - Structural / Erection",
+                                            "parent_task": dparent}, "name")
     mr_name = frappe.db.get_value("Material Request",
-                                  {"material_request_type": "Material Issue", "docstatus": 1}, "name")
+                                  {"material_request_type": "Material Issue", "plant_section": "DIST"}, "name")
     if not mr_name:
         try:
             mr = frappe.get_doc({
                 "doctype": "Material Request", "material_request_type": "Material Issue",
                 "transaction_date": today(), "company": company,
+                "plant_section": "DIST", "benkas_task": erection,
                 "items": [{"item_code": item_code, "qty": 40, "uom": "Nos",
                            "warehouse": warehouse, "schedule_date": today()}],
             })
             mr.insert(ignore_permissions=True)
-            mr.submit()
+            from frappe.model.workflow import apply_workflow
+            apply_workflow(mr, "Approve")  # submits + benkas_status = Approved
             mr_name = mr.name
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Benkas: demo MR failed")

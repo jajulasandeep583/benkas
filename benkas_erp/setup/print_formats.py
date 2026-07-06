@@ -243,6 +243,33 @@ DAILY_PROGRESS = CSS + """
 </div>
 """
 
+MATERIAL_REQUEST = CSS + """
+<div class="bk">
+  <div class="hd"><span>MATERIAL REQUEST SLIP</span><span>{{ doc.name }}</span></div>
+  <div class="bd">
+    <div class="g">
+      <div class="f"><b>Plant Section</b> {{ doc.plant_section or '-' }}</div>
+      <div class="f"><b>Task</b> {{ doc.benkas_task or '-' }}</div>
+      <div class="f"><b>Type</b> {{ doc.material_request_type }}</div>
+      <div class="f"><b>Status</b> <span class="badge">{{ doc.benkas_status or '-' }}</span></div>
+      <div class="f"><b>Requested By</b> {{ doc.owner }}</div>
+      <div class="f"><b>Request Date</b> {{ frappe.format(doc.transaction_date, {'fieldtype':'Date'}) }}</div>
+    </div>
+    <table class="t"><tr><th>Item</th><th>Qty</th><th>UOM</th><th>Required By</th><th>Warehouse</th></tr>
+      {% for r in doc.items %}<tr><td>{{ r.item_code }}</td><td>{{ r.qty }}</td>
+      <td>{{ r.uom or r.stock_uom or '' }}</td>
+      <td>{{ frappe.format(r.schedule_date, {'fieldtype':'Date'}) }}</td>
+      <td>{{ r.warehouse or '' }}</td></tr>{% endfor %}
+    </table>
+    <div style="margin-top:26px;display:flex;justify-content:space-between;font-size:12px">
+      <div>Requested by: __________________</div>
+      <div>Approved by (Incharge): __________________</div>
+    </div>
+    <div class="code">{{ doc.name }}</div>
+  </div>
+</div>
+"""
+
 FORMATS = [
     ("Staff ID Card", "Employee", "Benkas Core", STAFF),
     ("Labour ID Card", "Labour Master", "Benkas Core", LABOUR),
@@ -252,6 +279,7 @@ FORMATS = [
     ("Safety Work Permit Print", "Safety Work Permit", "Site Safety Assets", SAFETY_PERMIT),
     ("Electrical Work Permit Print", "Electrical Work Permit", "Site Safety Assets", ELEC_PERMIT),
     ("Daily Progress Report", "Daily Progress Log", "Work Schedule", DAILY_PROGRESS),
+    ("Material Request Slip", "Material Request", "Material", MATERIAL_REQUEST),
 ]
 
 
