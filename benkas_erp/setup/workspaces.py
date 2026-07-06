@@ -82,33 +82,53 @@ def _ensure_cards():
 
 # ------------------------- charts -------------------------
 def _charts():
+    # key, label, doctype, group_by_field, chart_type, filters, parent_doctype
     return [
         ("headcount_section", "Benkas Headcount by Section", "Gate Entry", "plant_section", "Bar",
-         [["Gate Entry", "entry_type", "=", "In"]]),
-        ("ack_status", "Benkas Acknowledgement Status", "Gate Entry", "acknowledgement_status", "Donut", []),
+         [["Gate Entry", "entry_type", "=", "In"]], None),
+        ("ack_status", "Benkas Acknowledgement Status", "Gate Entry", "acknowledgement_status", "Donut", [], None),
         ("stock_purpose", "Benkas Stock Movement by Purpose", "Stock Entry", "purpose", "Bar",
-         [["Stock Entry", "docstatus", "=", 1]]),
-        ("qc_outcome", "Benkas QC Outcome", "Quality Inspection", "status", "Donut", []),
-        ("delay_reasons", "Benkas Delay Reasons", "Daily Progress Log", "delay_reason", "Donut", []),
-        ("violations_section", "Benkas Violations by Section", "Safety Violation Log", "plant_section", "Bar", []),
-        ("permit_status", "Benkas Permit Status", "Safety Work Permit", "permit_status", "Donut", []),
+         [["Stock Entry", "docstatus", "=", 1]], None),
+        ("qc_outcome", "Benkas QC Outcome", "Quality Inspection", "status", "Donut", [], None),
+        ("delay_reasons", "Benkas Delay Reasons", "Daily Task Progress", "delay_reason", "Donut", [],
+         "Daily Progress Log"),
+        ("violations_section", "Benkas Violations by Section", "Safety Violation Log", "plant_section", "Bar", [], None),
+        ("permit_status", "Benkas Permit Status", "Safety Work Permit", "permit_status", "Donut", [], None),
     ]
 
 
 def _ensure_charts():
     names = {}
-    for key, label, dt, based_on, ctype, filters in _charts():
+    for key, label, dt, based_on, ctype, filters, parent_dt in _charts():
         if not frappe.db.exists("DocType", dt):
             continue
-        existing = frappe.db.get_value("Dashboard Chart", {"chart_name": label}, "name")
-        if existing:
-            names[key] = existing
-            continue
-        names[key] = frappe.get_doc({
-            "doctype": "Dashboard Chart", "chart_name": label, "chart_type": "Group By",
-            "document_type": dt, "group_by_type": "Count", "group_by_based_on": based_on,
-            "type": ctype, "is_public": 1, "timeseries": 0, "filters_json": json.dumps(filters),
-        }).insert(ignore_permissions=True).name
+        try:
+            fj = json.dumps(filters)
+            existing = frappe.db.get_value("Dashboard Chart", {"chart_name": label}, "name")
+            if existing:
+                doc = frappe.get_doc("Dashboard Chart", existing)
+                # document_type is set-only-once -> delete & recreate if it changed
+                if doc.document_type != dt or (doc.parent_document_type or None) != parent_dt:
+                    frappe.delete_doc("Dashboard Chart", existing, force=1, ignore_permissions=True)
+                else:
+                    if (doc.group_by_based_on != based_on or doc.type != ctype
+                            or (doc.filters_json or "[]") != fj):
+                        doc.group_by_based_on = based_on
+                        doc.type = ctype
+                        doc.filters_json = fj
+                        doc.save(ignore_permissions=True)
+                    names[key] = existing
+                    continue
+            payload = {
+                "doctype": "Dashboard Chart", "chart_name": label, "chart_type": "Group By",
+                "document_type": dt, "group_by_type": "Count", "group_by_based_on": based_on,
+                "type": ctype, "is_public": 1, "timeseries": 0, "filters_json": fj,
+            }
+            if parent_dt:
+                payload["parent_document_type"] = parent_dt
+            names[key] = frappe.get_doc(payload).insert(ignore_permissions=True).name
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Benkas: chart {label} failed")
     return names
 
 
@@ -174,7 +194,7 @@ def _workspaces():
           ("Assets & Utility", ["Generator Log", "Power Consumption Log", "Site Vehicle Log",
                                 "Contractor Tools Register", "Visitor Log"])]),
 
-        ("Benkas Core", "setting",
+        ("Benkas Core", "settings",
          ["Benkas Project Manager"],
          [("DocType", "Plant Section", "Plant Section"), ("DocType", "Contractor", "Contractor"),
           ("DocType", "Labour Master", "Labour Master"),
@@ -186,14 +206,14 @@ def _workspaces():
          [("Masters", ["Plant Section", "Contractor", "Labour Master", "Construction Activity",
                        "Delay Reason", "Generator Master", "Site Vehicle"])]),
 
-        ("Benkas MIS", "dashboard",
+        ("Benkas MIS", "layout-dashboard",
          ["Ramshy Bio Management", "Benkas Project Manager"],
          [("Report", "Section Progress - Planned vs Actual", "Section Progress - Planned vs Actual"),
           ("Report", "EOD Manpower MIS", "EOD Manpower MIS"),
           ("Report", "Material Section Stock Balance", "Material Section Stock Balance"),
           ("Report", "Safety Violations by Contractor", "Safety Violations by Contractor")],
          ["overall_progress", "today_headcount", "open_violations", "pending_ack"],
-         ["headcount_section", "delay_reasons", "violations_section"],
+         ["headcount_section", "violations_section"],
          []),
     ]
 
@@ -268,3 +288,5 @@ def create():
                             card_ids, chart_ids, i)
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Benkas: workspaces setup failed")
+
+

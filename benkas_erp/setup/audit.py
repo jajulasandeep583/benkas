@@ -17,8 +17,8 @@ WS_EXPECT = {
     "Material and Purchase": ("truck", "orange"),
     "Work Schedule and Progress": ("calendar", "green"),
     "Site Safety and Assets": ("shield", "red"),
-    "Benkas Core": ("setting", "gray"),
-    "Benkas MIS": ("dashboard", "purple"),
+    "Benkas Core": ("settings", "gray"),
+    "Benkas MIS": ("layout-dashboard", "purple"),
 }
 
 # doctypes that must carry a plant_section link
@@ -188,6 +188,57 @@ def run():
     print(f"  {'PASS' if counts_ok and not orphans and not dups else 'FAIL'}  "
           f"total_subtasks={total} sections={len(per_section)} "
           f"each9={counts_ok} orphans={orphans} dup_sections={dups}")
+
+    # ---------------- Daily Progress Log end-to-end flow ----------------
+    print("\n--- DAILY PROGRESS LOG (single site-log flow) ---")
+    dpl_name = frappe.db.get_value("Daily Progress Log", {"docstatus": 1}, "name")
+    if not dpl_name:
+        print("  WARN  no submitted Daily Progress Log to audit")
+    else:
+        d = frappe.get_doc("Daily Progress Log", dpl_name)
+        # 1. Task.progress updated from task_progress rows
+        prog_ok = all(
+            frappe.db.get_value("Task", r.task, "progress") == r.percent_complete
+            for r in d.task_progress if r.task)
+        print(f"  {'PASS' if prog_ok else 'FAIL'}  Task.progress updated from task_progress rows")
+        # 2. Task.manpower_days_logged accrued
+        man_ok = any((frappe.db.get_value("Task", r.task, "manpower_days_logged") or 0) > 0
+                     for r in d.workers_present if r.task)
+        print(f"  {'PASS' if man_ok else 'FAIL'}  Task.manpower_days_logged accrued from worker rows")
+        # 3. Plant Section rollup
+        sec_pct = frappe.db.get_value("Plant Section", d.plant_section, "section_percent_complete")
+        print(f"  {'PASS' if sec_pct not in (None,) else 'FAIL'}  Plant Section.section_percent_complete = {sec_pct}")
+        # 4. Stock Entry auto-created + submitted with qty
+        se = d.stock_entry
+        se_ok, issued_qty = False, 0
+        if se and frappe.db.get_value("Stock Entry", se, "docstatus") == 1:
+            issued_qty = sum(frappe.get_all("Stock Entry Detail",
+                             filters={"parent": se}, pluck="qty"))
+            se_ok = issued_qty > 0
+        print(f"  {'PASS' if se_ok else 'FAIL'}  Stock Entry auto-created & submitted ({se}, qty={issued_qty})")
+        # 5. Stock actually reduced (an issue exists in the ledger for the item/warehouse)
+        mrow = d.material_consumed[0] if d.material_consumed else None
+        red_ok = False
+        if mrow:
+            wh = frappe.db.get_value("Plant Section", d.plant_section, "warehouse")
+            neg = frappe.db.sql("""SELECT COALESCE(SUM(actual_qty),0) FROM `tabStock Ledger Entry`
+                WHERE item_code=%s AND warehouse=%s AND actual_qty<0""", (mrow.item, wh))[0][0]
+            red_ok = (neg or 0) < 0
+        print(f"  {'PASS' if red_ok else 'FAIL'}  Stock reduced in ledger for consumed item")
+        # 6. Material Request consumed (if linked)
+        mr = mrow.material_request if mrow else None
+        if mr:
+            per = frappe.db.get_value("Material Request", mr, "per_ordered") or 0
+            print(f"  {'PASS' if per > 0 else 'FAIL'}  Material Request consumed (per_ordered={per})")
+        else:
+            print("  n/a   no Material Request linked on the log")
+        # 7. print format renders all three tables
+        try:
+            html = frappe.get_print("Daily Progress Log", dpl_name, print_format="Daily Progress Report")
+            tabs_ok = all(t in html for t in ("Task Progress", "Workers Present", "Material Consumed"))
+            print(f"  {'PASS' if tabs_ok else 'FAIL'}  Daily Progress Report renders all 3 child tables ({len(html)}b)")
+        except Exception as e:
+            print(f"  FAIL  print render: {e}")
 
     # ---------------- Role -> Workspace visibility ----------------
     print("\n--- WORKSPACE VISIBILITY BY ROLE (sidebar) ---")

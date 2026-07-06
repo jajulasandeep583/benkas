@@ -204,19 +204,38 @@ ELEC_PERMIT = CSS + """
 
 DAILY_PROGRESS = CSS + """
 <div class="bk">
-  <div class="hd"><span>DAILY PROGRESS REPORT</span><span>{{ doc.name }}</span></div>
+  <div class="hd"><span>DAILY SITE LOG</span><span>{{ doc.name }}</span></div>
   <div class="bd">
     <div class="g">
       <div class="f"><b>Section</b> {{ doc.plant_section }}</div>
-      <div class="f"><b>Task</b> {{ doc.task }}</div>
       <div class="f"><b>Date</b> {{ frappe.format(doc.log_date, {'fieldtype':'Date'}) }}</div>
-      <div class="f"><b>% Complete</b> {{ doc.percent_complete }}%</div>
-      <div class="f"><b>Manpower Deployed</b> {{ doc.manpower_deployed }}</div>
-      <div class="f"><b>Material Consumed</b> {{ frappe.format(doc.material_consumed_value, {'fieldtype':'Currency'}) }}</div>
-      <div class="f"><b>Delay Reason</b> {{ doc.delay_reason or '-' }}</div>
+      <div class="f"><b>Incharge</b> {{ doc.incharge or '-' }}</div>
+      <div class="f"><b>Stock Entry</b> {{ doc.stock_entry or '-' }}</div>
     </div>
-    <div class="f" style="font-size:12px;margin-top:6px"><b>Activity</b> {{ doc.activity_description or '-' }}</div>
-    <div class="f" style="font-size:12px"><b>Remarks</b> {{ doc.remarks or '-' }}</div>
+
+    <div style="font-weight:bold;margin-top:10px">Task Progress</div>
+    <table class="t"><tr><th>Task</th><th>% Complete</th><th>Activity</th><th>Delay Reason</th></tr>
+      {% for r in doc.task_progress %}<tr><td>{{ r.task }}</td><td>{{ r.percent_complete }}%</td>
+      <td>{{ r.activity_description or '' }}</td><td>{{ r.delay_reason or '' }}</td></tr>{% endfor %}
+      {% if not doc.task_progress %}<tr><td colspan="4">—</td></tr>{% endif %}
+    </table>
+
+    <div style="font-weight:bold;margin-top:10px">Workers Present</div>
+    <table class="t"><tr><th>Type</th><th>Person</th><th>Task</th><th>Hours</th></tr>
+      {% for r in doc.workers_present %}<tr><td>{{ r.person_type }}</td><td>{{ r.person }}</td>
+      <td>{{ r.task or '' }}</td><td>{{ r.hours }}</td></tr>{% endfor %}
+      {% if not doc.workers_present %}<tr><td colspan="4">—</td></tr>{% endif %}
+    </table>
+
+    <div style="font-weight:bold;margin-top:10px">Material Consumed</div>
+    <table class="t"><tr><th>Item</th><th>Qty</th><th>UOM</th><th>Task</th><th>MR</th></tr>
+      {% for r in doc.material_consumed %}<tr><td>{{ r.item }}</td><td>{{ r.qty }}</td>
+      <td>{{ r.uom or '' }}</td><td>{{ r.task or '' }}</td>
+      <td>{{ r.material_request or ('NO MR' if r.no_material_request else '') }}</td></tr>{% endfor %}
+      {% if not doc.material_consumed %}<tr><td colspan="5">—</td></tr>{% endif %}
+    </table>
+
+    <div class="f" style="font-size:12px;margin-top:8px"><b>Remarks</b> {{ doc.remarks or '-' }}</div>
     {% if doc.photos %}<div style="margin-top:8px">
       {% for p in doc.photos %}{% if p.image %}<img src="{{ p.image }}" style="width:120px;height:90px;object-fit:cover;border:1px solid #999;margin:3px">{% endif %}{% endfor %}
     </div>{% endif %}

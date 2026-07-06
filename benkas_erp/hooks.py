@@ -271,7 +271,8 @@ doc_events = {
         "validate": "benkas_erp.material.purchase_receipt_hooks.validate",
     },
     "Daily Progress Log": {
-        "before_save": "benkas_erp.work_schedule.dpl_hooks.set_rollups",
+        "validate": "benkas_erp.work_schedule.dpl_hooks.validate",
+        "on_submit": "benkas_erp.work_schedule.dpl_hooks.on_submit",
     },
     "Contractor Tools Register": {
         "before_save": "benkas_erp.site_safety_assets.tools_hooks.set_status",

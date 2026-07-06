@@ -3,33 +3,28 @@
  "allow_bulk_edit": 1,
  "allow_rename": 1,
  "autoname": "DPL-.YYYY.-.#####",
- "creation": "2026-07-06 19:45:47.829914",
+ "creation": "2026-07-06 21:37:41.141920",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "task",
   "plant_section",
   "log_date",
-  "percent_complete",
   "cb1",
-  "manpower_deployed",
-  "material_consumed_value",
-  "delay_reason",
-  "sb_desc",
-  "activity_description",
+  "incharge",
+  "stock_entry",
+  "sb_progress",
+  "task_progress",
+  "sb_workers",
+  "workers_present",
+  "sb_material",
+  "material_consumed",
+  "sb_photos",
+  "photos",
   "remarks",
-  "photos"
+  "amended_from"
  ],
  "fields": [
-  {
-   "fieldname": "task",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Task",
-   "options": "Task",
-   "reqd": 1
-  },
   {
    "fieldname": "plant_section",
    "fieldtype": "Link",
@@ -47,42 +42,67 @@
    "reqd": 1
   },
   {
-   "fieldname": "percent_complete",
-   "fieldtype": "Percent",
-   "in_list_view": 1,
-   "label": "Percent Complete"
-  },
-  {
    "fieldname": "cb1",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "manpower_deployed",
-   "fieldtype": "Int",
-   "label": "Manpower Deployed",
-   "read_only": 1
-  },
-  {
-   "fieldname": "material_consumed_value",
-   "fieldtype": "Currency",
-   "label": "Material Consumed Value",
-   "read_only": 1
-  },
-  {
-   "fieldname": "delay_reason",
+   "default": "__user",
+   "fieldname": "incharge",
    "fieldtype": "Link",
-   "label": "Delay Reason",
-   "options": "Delay Reason"
+   "in_list_view": 1,
+   "label": "Incharge",
+   "options": "User"
   },
   {
-   "fieldname": "sb_desc",
+   "fieldname": "stock_entry",
+   "fieldtype": "Link",
+   "label": "Auto Stock Entry",
+   "options": "Stock Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_progress",
    "fieldtype": "Section Break",
-   "label": "Activity"
+   "label": "Task Progress"
   },
   {
-   "fieldname": "activity_description",
-   "fieldtype": "Small Text",
-   "label": "Activity Description"
+   "fieldname": "task_progress",
+   "fieldtype": "Table",
+   "label": "Task Progress",
+   "options": "Daily Task Progress"
+  },
+  {
+   "fieldname": "sb_workers",
+   "fieldtype": "Section Break",
+   "label": "Workers Present"
+  },
+  {
+   "fieldname": "workers_present",
+   "fieldtype": "Table",
+   "label": "Workers Present",
+   "options": "Daily Worker Log"
+  },
+  {
+   "fieldname": "sb_material",
+   "fieldtype": "Section Break",
+   "label": "Material Consumed"
+  },
+  {
+   "fieldname": "material_consumed",
+   "fieldtype": "Table",
+   "label": "Material Consumed",
+   "options": "Daily Material Consumed"
+  },
+  {
+   "fieldname": "sb_photos",
+   "fieldtype": "Section Break",
+   "label": "Site Photos"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Photos",
+   "options": "Daily Progress Photo"
   },
   {
    "fieldname": "remarks",
@@ -90,16 +110,21 @@
    "label": "Remarks"
   },
   {
-   "fieldname": "photos",
-   "fieldtype": "Table",
-   "label": "Photos",
-   "options": "Daily Progress Photo"
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Daily Progress Log",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-07-06 19:45:47.829914",
+ "modified": "2026-07-06 21:37:41.141920",
  "modified_by": "Administrator",
  "module": "Work Schedule",
  "name": "Daily Progress Log",

@@ -17,6 +17,20 @@ STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspecti
 WIN_OUT = "/mnt/c/Users/jajul/Downloads/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-06", "Daily Progress Log -> single end-to-end site log", [
+        "Restructured Daily Progress Log into one submittable site log per section/day "
+        "with 3 child tables: Task Progress, Workers Present, Material Consumed.",
+        "On submit (server-side): pushes % onto each Task.progress, accrues manpower-days, "
+        "batches all material rows into ONE auto-submitted Stock Entry (Material Issue), "
+        "consumes against a linked Material Request (flags rows with no MR), and recomputes "
+        "Plant Section % complete.",
+        "validate: >=1 photo; every worker must have a matching Gate Entry (In) for the "
+        "section/date; else the log is blocked (audit-proof manpower).",
+        "Fully REST-creatable (header + 3 tables + photos in one POST) — all logic is "
+        "server-side hooks so a PWA client gets identical guarantees.",
+        "Re-pointed Section Progress & Delay Analysis reports and the Delay Reasons chart "
+        "to the new child tables; fixed workspace icons to valid Lucide names.",
+    ]),
     ("2026-07-06", "Workspaces, reports & WBS expansion", [
         "Split navigation into 6 role-scoped workspaces (5 module + Benkas MIS exec view) with icons.",
         "Added 7 more MIS reports (Contractor labour, Late/OT, Stock Balance, QC Rejection, "

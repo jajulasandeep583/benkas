@@ -41,6 +41,18 @@ CUSTOM_FIELDS = {
          "fieldtype": "Table", "options": "Quality Inspection Photo",
          "insert_after": "readings"},
     ],
+    "Task": [
+        {"fieldname": "benkas_rollup_sb", "label": "Benkas Rollups",
+         "fieldtype": "Section Break", "insert_after": "progress", "collapsible": 1},
+        {"fieldname": "manpower_days_logged", "label": "Manpower Days Logged",
+         "fieldtype": "Float", "read_only": 1, "insert_after": "benkas_rollup_sb"},
+        {"fieldname": "material_consumed_value", "label": "Material Consumed Value",
+         "fieldtype": "Currency", "read_only": 1, "insert_after": "manpower_days_logged"},
+    ],
+    "Plant Section": [
+        {"fieldname": "section_percent_complete", "label": "Section % Complete",
+         "fieldtype": "Percent", "read_only": 1, "insert_after": "is_active"},
+    ],
 }
 
 

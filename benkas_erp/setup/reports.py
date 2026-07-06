@@ -48,11 +48,12 @@ SELECT
   ps.section_name AS "Section:Data:160",
   t.subject       AS "Task:Data:160",
   t.progress      AS "Task Progress:Percent:130",
-  MAX(dpl.percent_complete) AS "Reported:Percent:120",
+  MAX(dtp.percent_complete) AS "Reported:Percent:120",
   MAX(dpl.log_date)         AS "Last Update:Date:110"
 FROM `tabPlant Section` ps
 LEFT JOIN `tabTask` t ON t.name = ps.project_task
-LEFT JOIN `tabDaily Progress Log` dpl ON dpl.plant_section = ps.name
+LEFT JOIN `tabDaily Progress Log` dpl ON dpl.plant_section = ps.name AND dpl.docstatus = 1
+LEFT JOIN `tabDaily Task Progress` dtp ON dtp.parent = dpl.name
 GROUP BY ps.name
 ORDER BY ps.section_name
 """,
@@ -170,12 +171,13 @@ ORDER BY qi.report_date DESC
         "query": """
 SELECT
   ps.section_name   AS "Section:Data:170",
-  dpl.delay_reason  AS "Delay Reason:Link/Delay Reason:200",
+  dtp.delay_reason  AS "Delay Reason:Link/Delay Reason:200",
   COUNT(*)          AS "Occurrences:Int:120"
 FROM `tabDaily Progress Log` dpl
+JOIN `tabDaily Task Progress` dtp ON dtp.parent = dpl.name
 LEFT JOIN `tabPlant Section` ps ON ps.name = dpl.plant_section
-WHERE dpl.delay_reason IS NOT NULL AND dpl.delay_reason != ''
-GROUP BY ps.section_name, dpl.delay_reason
+WHERE dtp.delay_reason IS NOT NULL AND dtp.delay_reason != ''
+GROUP BY ps.section_name, dtp.delay_reason
 ORDER BY COUNT(*) DESC
 """,
     },
@@ -215,7 +217,19 @@ ORDER BY COUNT(*) DESC
 
 def create_reports():
     for r in REPORTS:
+        q = r["query"].strip()
         if frappe.db.exists("Report", r["name"]):
+            # keep query / ref_doctype in sync with code on every migrate
+            doc = frappe.get_doc("Report", r["name"])
+            changed = False
+            if (doc.query or "").strip() != q:
+                doc.query = q
+                changed = True
+            if doc.ref_doctype != r["ref_doctype"]:
+                doc.ref_doctype = r["ref_doctype"]
+                changed = True
+            if changed:
+                doc.save(ignore_permissions=True)
             continue
         frappe.get_doc({
             "doctype": "Report",
@@ -224,5 +238,5 @@ def create_reports():
             "module": r["module"],
             "report_type": "Query Report",
             "is_standard": "Yes",
-            "query": r["query"].strip(),
+            "query": q,
         }).insert(ignore_permissions=True)

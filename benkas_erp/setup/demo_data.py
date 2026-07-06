@@ -128,16 +128,36 @@ def run():
                 "time_in": add_to_date(now_datetime(), hours=-1),
                 "odometer_start": s, "odometer_end": e}).insert(ignore_permissions=True)
 
-    # daily progress logs (rollups auto-fetch)
+    # material stock (receipt + supplier/PR/QI + material request) must exist
+    # before the site log issues material
+    mat = _material_demo(company)
+
+    # single end-to-end Daily Site Log for DIST: task progress + workers + material
     if not frappe.db.count("Daily Progress Log"):
-        for code, pct in [("DIST", 35), ("FERM", 50)]:
-            task = frappe.db.get_value("Plant Section", code, "project_task")
-            frappe.get_doc({
-                "doctype": "Daily Progress Log", "task": task, "plant_section": code,
-                "log_date": today(), "percent_complete": pct,
-                "activity_description": f"Progress update for {code}",
-                "photos": [{"image": PLACEHOLDER_IMG, "caption": "Site view"}],
-            }).insert(ignore_permissions=True)
+        dparent = frappe.db.get_value("Plant Section", "DIST", "project_task")
+        civil = frappe.db.get_value("Task", {"subject": "DIST - Civil & Foundation", "parent_task": dparent}, "name")
+        erection = frappe.db.get_value("Task", {"subject": "DIST - Structural / Erection", "parent_task": dparent}, "name")
+        dpl = frappe.get_doc({
+            "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": today(),
+            "incharge": "Administrator", "remarks": "Distillation civil complete; erection ongoing.",
+            "task_progress": [
+                {"task": civil, "percent_complete": 100, "activity_description": "Foundation & civil complete"},
+                {"task": erection, "percent_complete": 60, "activity_description": "Columns erected",
+                 "delay_reason": "Material Delay"},
+            ],
+            "workers_present": [
+                {"person_type": "Employee", "person": e1, "task": erection, "hours": 8},
+                {"person_type": "Labour Master", "person": l1, "task": erection, "hours": 9},
+                {"person_type": "Labour Master", "person": l2, "task": civil, "hours": 8},
+            ],
+            "material_consumed": [
+                {"item": mat["item"], "qty": 30, "uom": "Nos", "task": erection,
+                 "material_request": mat.get("mr")},
+            ],
+            "photos": [{"image": PLACEHOLDER_IMG, "caption": "Site view"}],
+        })
+        dpl.insert(ignore_permissions=True)
+        dpl.submit()
 
     # safety violation
     if not frappe.db.count("Safety Violation Log"):
@@ -189,15 +209,7 @@ def run():
 
     frappe.db.commit()
 
-    _material_demo(company)
     _liven_dashboard()
-
-    # a delay reason on one progress log -> Delay Analysis report / chart
-    dpl = frappe.db.get_value("Daily Progress Log", {"plant_section": "FERM"}, "name")
-    if dpl and not frappe.db.get_value("Daily Progress Log", dpl, "delay_reason"):
-        if frappe.db.exists("Delay Reason", "Material Delay"):
-            frappe.db.set_value("Daily Progress Log", dpl, "delay_reason", "Material Delay")
-
     frappe.db.commit()
 
     counts = {dt: frappe.db.count(dt) for dt in [
@@ -241,7 +253,7 @@ def _material_demo(company):
     so the material/QC/stock-balance reports and charts show real data."""
     warehouse = frappe.db.get_value("Plant Section", "DIST", "warehouse")
     if not warehouse:
-        return
+        return {}
 
     item_code = "BK-CEMENT-OPC53"
     if not frappe.db.exists("Item", item_code):
@@ -267,17 +279,22 @@ def _material_demo(company):
         se.insert(ignore_permissions=True)
         se.submit()
 
-    # Material Issue (consumes stock) tagged to DIST -> feeds DPL rollup + report
-    if not frappe.db.exists("Stock Entry", {"stock_entry_type": "Material Issue",
-                                            "plant_section": "DIST"}):
-        se = frappe.get_doc({
-            "doctype": "Stock Entry", "stock_entry_type": "Material Issue",
-            "company": company, "plant_section": "DIST", "posting_date": today(),
-            "items": [{"item_code": item_code, "qty": 30, "s_warehouse": warehouse,
-                       "allow_zero_valuation_rate": 1}],
-        })
-        se.insert(ignore_permissions=True)
-        se.submit()
+    # Material Request (Material Issue) so the site log can consume against it
+    mr_name = frappe.db.get_value("Material Request",
+                                  {"material_request_type": "Material Issue", "docstatus": 1}, "name")
+    if not mr_name:
+        try:
+            mr = frappe.get_doc({
+                "doctype": "Material Request", "material_request_type": "Material Issue",
+                "transaction_date": today(), "company": company,
+                "items": [{"item_code": item_code, "qty": 40, "uom": "Nos",
+                           "warehouse": warehouse, "schedule_date": today()}],
+            })
+            mr.insert(ignore_permissions=True)
+            mr.submit()
+            mr_name = mr.name
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Benkas: demo MR failed")
 
     # Supplier + draft Purchase Receipt (weighbridge + invoice photo, weight variance)
     supplier = "Benkas Test Supplier"
@@ -315,3 +332,4 @@ def _material_demo(company):
             frappe.log_error(frappe.get_traceback(), "Benkas: demo QI failed")
 
     frappe.db.commit()
+    return {"item": item_code, "mr": mr_name, "warehouse": warehouse}
