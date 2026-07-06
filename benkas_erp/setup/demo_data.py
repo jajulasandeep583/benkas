@@ -114,6 +114,19 @@ def run():
         if frappe.db.exists("Plant Section", code):
             frappe.db.set_value("Plant Section", code, "incharge", "Administrator")
 
+    # give sections staggered start dates so the tentative task dates + the
+    # planned-vs-actual delta on Section 360 have realistic numbers to show
+    if frappe.get_meta("Plant Section").get_field("section_start_date"):
+        from frappe.utils import add_days as _ad, today as _td
+        offset = -90
+        for ps in frappe.get_all("Plant Section", fields=["name"], order_by="section_code asc"):
+            if not frappe.db.get_value("Plant Section", ps.name, "section_start_date"):
+                frappe.db.set_value("Plant Section", ps.name, "section_start_date", _ad(_td(), offset))
+            offset += 7
+        frappe.db.commit()
+        from benkas_erp.setup.activities import generate_section_tasks
+        generate_section_tasks()  # backfills tentative dates onto existing tasks
+
     # masters
     e1 = _employee("Ravi Kumar", "Ramshy Bio Staff")
     e2 = _employee("Suresh Rao", "Benkas Staff")
@@ -256,6 +269,7 @@ def run():
     frappe.db.commit()
 
     _liven_dashboard()
+    _gate_register_demo()
     frappe.db.commit()
 
     counts = {dt: frappe.db.count(dt) for dt in [
@@ -265,6 +279,30 @@ def run():
         "Electrical Work Permit", "Stock Entry", "Quality Inspection"]}
     print("DEMO DATA COUNTS:", counts)
     return counts
+
+
+def _gate_register_demo():
+    """Give the Gate Register every row type: gate OUT, visitor OUT, gate-pass
+    OUT + RETURN (Site Vehicle Log already has in+out; PR + tools already exist)."""
+    from frappe.utils import get_datetime, add_to_date
+    # close a couple of gate entries (adds OUT rows)
+    for ge in frappe.get_all("Gate Entry", filters={"time_out": ["is", "not set"]},
+                             pluck="name", limit=2):
+        ti = frappe.db.get_value("Gate Entry", ge, "time_in")
+        frappe.db.set_value("Gate Entry", ge, "time_out", add_to_date(get_datetime(ti), hours=8))
+    # close the visitor
+    v = frappe.db.get_value("Visitor Log", {"time_out": ["is", "not set"]}, "name")
+    if v:
+        vi = frappe.db.get_value("Visitor Log", v, "time_in")
+        frappe.db.set_value("Visitor Log", v, "time_out", add_to_date(get_datetime(vi), hours=1))
+    # take a gate pass Out then Returned (workflows are off -> set directly)
+    gp = frappe.db.get_value("Gate Pass", {}, "name")
+    if gp:
+        frappe.db.set_value("Gate Pass", gp, {
+            "pass_status": "Returned",
+            "actual_out_time": get_datetime(today() + " 11:00:00"),
+            "actual_return_time": get_datetime(today() + " 13:30:00")})
+    frappe.db.commit()
 
 
 def _liven_dashboard():

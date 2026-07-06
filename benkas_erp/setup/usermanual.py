@@ -157,8 +157,16 @@ def _intro(doc):
 
 def _ch_gate_security(doc):
     doc.add_heading("1.  Gate Security — your day", level=1)
-    _p(doc, "You are the front door of the plant. Almost everything you do is a scan. Keep "
-            "the Scan Station open all day.")
+    _p(doc, "Your workspace is Gate Management — it's your ONE sidebar entry with everything "
+            "gate-related: the Scan Station, Gate Entries, Visitors, Gate Passes, Contractor "
+            "Tools, Site Vehicle logs, and the Gate Register. You don't need any other "
+            "workspace. Almost everything you do is a scan — keep the Scan Station open all day.")
+    doc.add_heading("The Gate Register (your logbook)", level=2)
+    _p(doc, "Open 'Gate Register' from Gate Management to see every in/out event in one "
+            "chronological list — people, visitors, vehicles, material trucks, tools and gate "
+            "passes together, exactly like the physical gate register book. Filter by date, "
+            "type, section, direction or contractor. This is the report to open to answer "
+            "'who or what was on site at 3 pm last Tuesday' — each row links to its record.")
 
     doc.add_heading("Morning setup", level=2)
     _steps(doc, [
@@ -423,6 +431,38 @@ def _ch_pm(doc):
     _callout(doc, "Command", "Regenerate WBS sub-tasks with "
              "benkas_erp.setup.activities.generate_section_tasks (or the full "
              "setup_activities).")
+
+    doc.add_heading("Planning tentative dates & weights (Section Task Planner)", level=2)
+    _p(doc, "Every section sub-task carries a tentative start date, end date and a weight "
+            "(its share of the section). These pre-fill automatically from the section's "
+            "Section Start Date plus each activity's standard duration, and you tune them in one "
+            "place — the Section Task Planner page.")
+    _steps(doc, [
+        "Open Work Schedule and Progress → 'Section Task Planner' (or /app/section-task-planner).",
+        "Pick the section. Set its Section Start Date, then click 'Re-fill dates from start' to "
+        "cascade tentative windows across the 9 activities.",
+        "Adjust any start/end date or weight by hand. The weight total turns green when it adds "
+        "up to 1.00 (100%).",
+        "Click Save Plan. Any task whose end date has passed while it is still below 100% shows "
+        "as Delayed — on the planner, on Section 360, and in the client pack.",
+    ])
+    _callout(doc, "Tip", "Weights drive the section's roll-up %: a task at 60% with weight 0.15 "
+             "contributes 9% to the section. Keep weights summing to 1.00 for a true percentage.")
+
+    doc.add_heading("Section 360° — one section, everything (Section 360 page)", level=2)
+    _p(doc, "The Section 360 page is your single drill-down for any section: schedule position, "
+            "task checklist, manpower, material and recent site activity — no hunting across "
+            "reports.")
+    _bullets(doc, [
+        "Open it from Work Schedule and Progress or Benkas MIS ('Section 360°'), or /app/section-360.",
+        "Header shows Actual vs Planned % and an On Track / Delayed badge (with rough days behind).",
+        "Task checklist lists all 9 activities with their planned window, progress and status. "
+        "'Mark Done' sets a task to 100% and instantly rolls the section % up.",
+        "Manpower block: on-site today, person-days this week / total, split by category and "
+        "contractor. Material block: value consumed, top items issued, open requests. Activity "
+        "block: recent daily-log photos and work descriptions, visitor and open-safety counts.",
+    ])
+
     doc.add_heading("Reports", level=2)
     _p(doc, "Every workspace carries its reports. The full list:")
     _table(doc, ["Report", "Answers"], [
@@ -434,8 +474,12 @@ def _ch_pm(doc):
         ["QC Rejection Report", "Rejected quality inspections."],
         ["Section Progress - Planned vs Actual", "Task progress vs reported progress."],
         ["Section WBS Progress", "Every activity sub-task's status & %."],
+        ["Section Manpower & Work Log", "Per-section, per-day workers, person-days and the "
+         "actual work description logged."],
         ["Delay Analysis by Section", "Delay reasons tallied by section."],
         ["Weekly Section MIS", "Weekly logs, latest %, open material requests per section."],
+        ["Material Consumption by Item", "Per-item, per-section quantity consumed at site."],
+        ["Visitor Register Summary", "Visits, companies and who's still on site, by section."],
         ["Safety Violations Summary / by Contractor", "Violations by section / by contractor."],
         ["Generator Consumption MIS", "Running hours & diesel per generator."],
         ["Vehicle Utilisation", "Trips, hours, distance per site vehicle."],
@@ -448,10 +492,21 @@ def _ch_pm(doc):
         "See it in 'Staff Attendance Summary' (from HRMS Attendance) and 'Labour Attendance "
         "Register' (labour, from gate entries — the contractor-billing backbone).",
     ])
-    doc.add_heading("The weekly client MIS", level=2)
-    _p(doc, "The 'Weekly Section MIS' report plus the Benkas MIS dashboard are what you share "
-            "with Ramshy Bio each week — overall progress, manpower, material and safety at a "
-            "glance.")
+    doc.add_heading("The weekly client MIS pack", level=2)
+    _p(doc, "Every week the system builds a presentation-grade Word document you hand to Ramshy "
+            "Bio — cover with the project scorecard, section-wise progress table, a detail page "
+            "per section (task checklist, work done, material consumed), manpower and material "
+            "annexes, and an exceptions page (delayed tasks, open safety issues, overdue gate "
+            "passes, weighbridge variances).")
+    _bullets(doc, [
+        "It is generated automatically every week and dropped in the 'BENKAS PM' folder as "
+        "Client_Weekly_MIS_<date>.docx.",
+        "Build one on demand for any week-ending date with "
+        "benkas_erp.setup.client_mis.build (kwargs {'week_ending':'YYYY-MM-DD'}).",
+        "A committed sample lives in the app's docs/ folder (Sample_Client_Weekly_MIS.docx).",
+        "For a live on-screen view, the Section 360 page and Benkas MIS dashboard show the same "
+        "numbers in real time.",
+    ])
 
     doc.add_heading("BEFORE GO-LIVE checklist", level=2)
     _bullets(doc, [

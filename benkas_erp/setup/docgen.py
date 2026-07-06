@@ -17,6 +17,38 @@ STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspecti
 WIN_OUT = "/mnt/c/Users/jajul/Downloads/BENKAS PM/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-07", "Section 360, task planning & the weekly client MIS pack", [
+        "Task planning: every section sub-task now carries a tentative start/end date + weight, "
+        "pre-filled from a new Plant Section 'Section Start Date' + each Construction Activity's "
+        "'Default Duration (days)'. Overdue (past end, <100%) = Delayed everywhere.",
+        "Section Task Planner desk page (/app/section-task-planner): editable grid of one "
+        "section's 9 activities — set/cascade dates, tune weights (green when they sum to 1.00), "
+        "save straight to the Task records.",
+        "Section 360 desk page (/app/section-360): one whitelisted get_section_360(section) "
+        "returns header (actual vs planned %, On Track/Delayed), task checklist, manpower, "
+        "material and recent-activity blocks; a Mark-Done action sets Task=100% and rolls the "
+        "section up. Shortcuts on Work Schedule and Benkas MIS. No new doctypes.",
+        "Client Weekly MIS pack (setup/client_mis.py build()): presentation-grade A4 .docx — "
+        "cover scorecard, section-wise table, per-section detail x12, manpower & material "
+        "annexes, exceptions page. Weekly scheduler drops it in BENKAS PM; sample committed to "
+        "docs/.",
+        "3 new reports: Section Manpower & Work Log, Material Consumption by Item, Visitor "
+        "Register Summary (wired onto their workspaces).",
+        "Audit extended (pages render, 360 payload returns every block, planner save roundtrip, "
+        "mark-complete rollup, client-MIS builds a real docx, weekly scheduler wired) — 0 FAIL.",
+    ]),
+    ("2026-07-07", "Gate Management workspace + consolidated Gate Register", [
+        "New Gate Management workspace (door-open / cyan) — the single home for everything "
+        "gate-related: hero Scan Station shortcut, entry/exit doctype shortcuts (Gate Entry, "
+        "Temporary Passes filtered, Visitor Log, Gate Pass, Contractor Tools, Site Vehicle Log), "
+        "number cards (people/visitors on site, vehicles out, overdue passes, tools pending) and "
+        "entries-by-hour / by-category charts.",
+        "Gate Register report: one UNION view of every in/out event (gate entries, visitors, "
+        "vehicles, receipts, tools, gate passes) with date/type/direction/section/contractor "
+        "filters.",
+        "Rebalanced the other workspaces; Gate Security's only workspace is now Gate Management "
+        "(asserted in the audit).",
+    ]),
     ("2026-07-07", "Attendance, thermal slips, temp/tools scans, workflows OFF", [
         "Staff attendance via HRMS: gate scans create Employee Checkins; a default "
         "'Site General Shift' (auto-attendance) marks HRMS Attendance. Labour Attendance "
@@ -328,6 +360,7 @@ def build(path=None):
         ["before_save", "Generator Log", "Compute running hours & diesel L/hr"],
         ["validate", "Safety/Electrical Work Permit", "Guard closure (confirmation / LOTO / sign-off)"],
         ["cron */30 min", "Gate Pass", "Flag overdue passes (Out → Overdue)"],
+        ["weekly", "(scheduler)", "Build the client Weekly MIS pack (.docx) into the BENKAS PM folder"],
     ])
 
     # ---- 9. Seed & current data ----

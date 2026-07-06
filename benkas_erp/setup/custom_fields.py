@@ -52,6 +52,14 @@ CUSTOM_FIELDS = {
     "Plant Section": [
         {"fieldname": "section_percent_complete", "label": "Section % Complete",
          "fieldtype": "Percent", "read_only": 1, "insert_after": "is_active"},
+        {"fieldname": "section_start_date", "label": "Section Start Date", "fieldtype": "Date",
+         "insert_after": "section_percent_complete",
+         "description": "Planned start of work in this section — anchors the tentative task dates."},
+    ],
+    "Construction Activity": [
+        {"fieldname": "default_duration_days", "label": "Default Duration (days)",
+         "fieldtype": "Int", "default": "7", "insert_after": "default_weight",
+         "description": "Used to pre-fill tentative task dates (start + cumulative durations)."},
     ],
     "Gate Entry": [
         {"fieldname": "is_temporary", "label": "Temporary Pass", "fieldtype": "Check",

@@ -16,24 +16,28 @@ from benkas_erp.setup.onboarding import WORKSPACE_ONBOARDING
 SM = "System Manager"
 
 COLORS = {
+    "Gate Management": "cyan",
     "Manpower Manager": "blue", "Material and Purchase": "orange",
     "Work Schedule and Progress": "green", "Site Safety and Assets": "red",
     "Benkas Core": "gray", "Benkas MIS": "purple",
 }
 
 INTRO = {
-    "Manpower Manager": "Track everyone entering the site — company staff, contractors and "
-        "labour — with gate in/out, live photos and Incharge acknowledgement. Used every day "
-        "by Gate Security and Section Incharges.",
+    "Gate Management": "Everything that enters or exits the site is recorded here — people, "
+        "visitors, vehicles, tools, and gate passes. Gate Security works from this workspace "
+        "all day; the Scan Station is the fastest way to log anyone in or out.",
+    "Manpower Manager": "Workforce masters, attendance review and Incharge acknowledgements. "
+        "Day-to-day gate operations (logging people in/out, visitors, passes) now live in the "
+        "Gate Management workspace.",
     "Material and Purchase": "Receive material at the gate through weighbridge and quality "
         "check into section stores, then issue it to work. Used by Stores / Weighbridge "
-        "Operators and Gate Security.",
+        "Operators.",
     "Work Schedule and Progress": "Plan each section's work as tasks and log daily site "
         "progress — manpower, material and photos — in one place. Used daily by Section "
         "Incharges and the Project Manager.",
-    "Site Safety and Assets": "Log visitors, safety violations, work permits, generator / "
-        "vehicle usage and contractor tools here. Used daily by Section Incharges, the "
-        "Safety Officer and Gate Security.",
+    "Site Safety and Assets": "Safety violations, work permits and generator / power "
+        "monitoring. Used by Section Incharges, the Safety Officer and the Generator / "
+        "Electrical Operator. (Visitors, tools and vehicle logs moved to Gate Management.)",
     "Benkas Core": "Set up the plant's master data — sections, contractors, labour, "
         "activities and delay reasons — before daily operations begin. Managed by the "
         "Project Manager.",
@@ -74,6 +78,16 @@ def _cards():
          [["Safety Work Permit", "permit_status", "=", "Work in Progress"]]),
         ("tool_mismatch", "Tool Mismatches", "Contractor Tools Register", "Count", None,
          [["Contractor Tools Register", "status", "=", "Mismatch"]]),
+        # --- Gate Management ---
+        ("people_on_site", "People On Site Now", "Gate Entry", "Count", None,
+         [["Gate Entry", "entry_type", "=", "In"], ["Gate Entry", "time_out", "is", "not set"],
+          ["Gate Entry", "time_in", "Timespan", "today"]]),
+        ("visitors_on_site", "Visitors On Site Now", "Visitor Log", "Count", None,
+         [["Visitor Log", "time_out", "is", "not set"], ["Visitor Log", "time_in", "Timespan", "today"]]),
+        ("vehicles_out", "Vehicles Out", "Site Vehicle Log", "Count", None,
+         [["Site Vehicle Log", "time_out", "is", "set"], ["Site Vehicle Log", "time_in", "is", "not set"]]),
+        ("tools_pending", "Tools Pending Return", "Contractor Tools Register", "Count", None,
+         [["Contractor Tools Register", "status", "=", "In"]]),
     ]
 
 
@@ -108,6 +122,8 @@ def _charts():
          "Daily Progress Log"),
         ("violations_section", "Benkas Violations by Section", "Safety Violation Log", "plant_section", "Bar", [], None),
         ("permit_status", "Benkas Permit Status", "Safety Work Permit", "permit_status", "Donut", [], None),
+        ("entries_category", "Benkas Entries by Category", "Gate Entry", "person_type", "Donut",
+         [["Gate Entry", "entry_type", "=", "In"]], None),
     ]
 
 
@@ -140,17 +156,57 @@ def _ensure_charts():
             names[key] = frappe.get_doc(payload).insert(ignore_permissions=True).name
         except Exception:
             frappe.log_error(frappe.get_traceback(), f"Benkas: chart {label} failed")
+    names.update(_ensure_timeseries_charts())
+    return names
+
+
+def _ensure_timeseries_charts():
+    """Count-timeseries chart: gate entries by hour (shows gate rush periods)."""
+    names = {}
+    label = "Benkas Gate Entries by Hour"
+    if not frappe.db.exists("DocType", "Gate Entry"):
+        return names
+    existing = frappe.db.get_value("Dashboard Chart", {"chart_name": label}, "name")
+    if existing:
+        names["entries_hour"] = existing
+        return names
+    try:
+        names["entries_hour"] = frappe.get_doc({
+            "doctype": "Dashboard Chart", "chart_name": label, "chart_type": "Count",
+            "document_type": "Gate Entry", "based_on": "time_in", "timeseries": 1,
+            "time_interval": "Hourly", "timespan": "Last Week", "type": "Bar", "is_public": 1,
+            "filters_json": json.dumps([["Gate Entry", "entry_type", "=", "In"]]),
+        }).insert(ignore_permissions=True).name
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Benkas: hourly chart failed")
     return names
 
 
 # ------------------------- workspace specs -------------------------
 def _workspaces():
     return [
-        {"name": "Manpower Manager", "icon": "users",
+        {"name": "Gate Management", "icon": "door-open",
          "roles": ["Gate Security", "Section Incharge", "Benkas Project Manager"],
-         "shortcuts": [("URL", "🔳 Gate Scan Station", "/app/benkas-scan"),
-                       ("DocType", "Gate Entry", "Gate Entry"), ("DocType", "Gate Pass", "Gate Pass"),
+         "shortcuts": [("URL", "🔳 Scan Station — scan cards & slips here", "/app/benkas-scan"),
+                       ("DocType", "Gate Entry", "Gate Entry"),
+                       ("DocType", "Temporary Passes", "Gate Entry", {"is_temporary": 1}),
+                       ("DocType", "Visitor Log", "Visitor Log"),
+                       ("DocType", "Gate Pass", "Gate Pass"),
                        ("DocType", "Contractor Tools Register", "Contractor Tools Register"),
+                       ("DocType", "Site Vehicle Log", "Site Vehicle Log"),
+                       ("DocType", "Site Vehicle", "Site Vehicle"),
+                       ("Report", "Gate Register", "Gate Register"),
+                       ("Report", "Visitor Register Summary", "Visitor Register Summary"),
+                       ("Report", "EOD Manpower MIS", "EOD Manpower MIS"),
+                       ("Report", "Labour Attendance Register", "Labour Attendance Register"),
+                       ("Report", "Staff Attendance Summary", "Staff Attendance Summary")],
+         "cards": ["people_on_site", "visitors_on_site", "vehicles_out", "overdue_passes", "tools_pending"],
+         "charts": ["entries_hour", "entries_category"],
+         "links": [("Gate Reference", ["Plant Section", "Contractor"])]},
+
+        {"name": "Manpower Manager", "icon": "users",
+         "roles": ["Section Incharge", "Benkas Project Manager"],
+         "shortcuts": [("DocType", "Gate Entry", "Gate Entry"), ("DocType", "Gate Pass", "Gate Pass"),
                        ("DocType", "Employee", "Employee"),
                        ("Report", "EOD Manpower MIS", "EOD Manpower MIS"),
                        ("Report", "Labour Attendance Register", "Labour Attendance Register"),
@@ -162,7 +218,7 @@ def _workspaces():
          "links": [("Workforce Masters", ["Labour Master", "Contractor", "Plant Section"])]},
 
         {"name": "Material and Purchase", "icon": "truck",
-         "roles": ["Gate Security", "Stores Weighbridge Operator", "Benkas Project Manager"],
+         "roles": ["Stores Weighbridge Operator", "Benkas Project Manager"],
          "shortcuts": [("DocType", "Purchase Receipt", "Purchase Receipt"),
                        ("DocType", "Quality Inspection", "Quality Inspection"),
                        ("DocType", "Stock Entry", "Stock Entry"),
@@ -170,6 +226,7 @@ def _workspaces():
                        ("DocType", "Item", "Item"), ("DocType", "Supplier", "Supplier"),
                        ("Report", "Material Received vs Issued", "Material Received vs Issued"),
                        ("Report", "Material Section Stock Balance", "Material Section Stock Balance"),
+                       ("Report", "Material Consumption by Item", "Material Consumption by Item"),
                        ("Report", "QC Rejection Report", "QC Rejection Report")],
          "cards": ["qc_rejected", "weight_var", "matvalue_today"],
          "charts": ["stock_purpose", "qc_outcome"],
@@ -177,11 +234,14 @@ def _workspaces():
 
         {"name": "Work Schedule and Progress", "icon": "calendar",
          "roles": ["Section Incharge", "Benkas Project Manager"],
-         "shortcuts": [("DocType", "Daily Progress Log", "Daily Progress Log"),
+         "shortcuts": [("URL", "🧭 Section 360° — one section, everything", "/app/section-360"),
+                       ("URL", "🗓️ Section Task Planner — set tentative dates", "/app/section-task-planner"),
+                       ("DocType", "Daily Progress Log", "Daily Progress Log"),
                        ("DocType", "Task", "Task"), ("DocType", "Project", "Project"),
                        ("Report", "Section Progress - Planned vs Actual", "Section Progress - Planned vs Actual"),
                        ("Report", "Section WBS Progress", "Section WBS Progress"),
                        ("Report", "Delay Analysis by Section", "Delay Analysis by Section"),
+                       ("Report", "Section Manpower & Work Log", "Section Manpower & Work Log"),
                        ("Report", "Weekly Section MIS", "Weekly Section MIS")],
          "cards": ["overall_progress", "active_sections"],
          "charts": ["delay_reasons"],
@@ -189,23 +249,19 @@ def _workspaces():
 
         {"name": "Site Safety and Assets", "icon": "shield",
          "roles": ["Section Incharge", "Safety Officer", "Generator Electrical Operator", "Benkas Project Manager"],
-         "shortcuts": [("DocType", "Visitor Log", "Visitor Log"),
-                       ("DocType", "Safety Violation Log", "Safety Violation Log"),
+         "shortcuts": [("DocType", "Safety Violation Log", "Safety Violation Log"),
                        ("DocType", "Safety Work Permit", "Safety Work Permit"),
                        ("DocType", "Electrical Work Permit", "Electrical Work Permit"),
-                       ("DocType", "Contractor Tools Register", "Contractor Tools Register"),
                        ("DocType", "Generator Master", "Generator Master"),
                        ("DocType", "Generator Log", "Generator Log"),
                        ("DocType", "Power Consumption Log", "Power Consumption Log"),
-                       ("DocType", "Site Vehicle", "Site Vehicle"),
-                       ("DocType", "Site Vehicle Log", "Site Vehicle Log"),
                        ("Report", "Safety Violations Summary", "Safety Violations Summary"),
                        ("Report", "Safety Violations by Contractor", "Safety Violations by Contractor"),
                        ("Report", "Generator Consumption MIS", "Generator Consumption MIS"),
                        ("Report", "Vehicle Utilisation", "Vehicle Utilisation")],
          "cards": ["open_violations", "active_permits", "tool_mismatch"],
          "charts": ["violations_section", "permit_status"],
-         "links": [("Reference", ["Gate Pass", "Plant Section"])]},
+         "links": [("Reference", ["Plant Section"])]},
 
         {"name": "Benkas Core", "icon": "settings",
          "roles": ["Benkas Project Manager"],
@@ -220,7 +276,9 @@ def _workspaces():
          "roles": ["Ramshy Bio Management", "Benkas Project Manager"],
          # one navigation shortcut to the setup/masters workspace — Benkas Core
          # can't get its own /apps tile (v16 = one tile per installed app)
-         "shortcuts": [("URL", "Setup / Masters", "/app/benkas-core")],
+         "shortcuts": [("URL", "🧭 Section 360° — drill into any section", "/app/section-360"),
+                       ("URL", "🗓️ Section Task Planner", "/app/section-task-planner"),
+                       ("URL", "Setup / Masters", "/app/benkas-core")],
          "cards": ["overall_progress", "today_headcount", "open_violations", "pending_ack"],
          "charts": ["headcount_section", "violations_section"],
          "links": []},
@@ -258,7 +316,9 @@ def _make_workspace(spec, card_ids, chart_ids, seq):
     name = spec["name"]
 
     ws_shortcuts = []
-    for (stype, label, link_to) in spec["shortcuts"]:
+    for sc in spec["shortcuts"]:
+        stype, label, link_to = sc[0], sc[1], sc[2]
+        extra = sc[3] if len(sc) > 3 else None
         if stype == "Report":
             if frappe.db.exists("Report", link_to):
                 ws_shortcuts.append({"type": "Report", "label": label, "link_to": link_to,
@@ -267,7 +327,10 @@ def _make_workspace(spec, card_ids, chart_ids, seq):
         elif stype == "URL":
             ws_shortcuts.append({"type": "URL", "label": label, "url": link_to, "color": "Green"})
         elif frappe.db.exists("DocType", link_to):
-            ws_shortcuts.append({"type": "DocType", "label": label, "link_to": link_to, "color": "Blue"})
+            row = {"type": "DocType", "label": label, "link_to": link_to, "color": "Blue"}
+            if extra:  # pre-filtered list view (e.g. Temporary Passes)
+                row["stats_filter"] = json.dumps(extra)
+            ws_shortcuts.append(row)
 
     links = []
     for (grp, dts) in spec["links"]:

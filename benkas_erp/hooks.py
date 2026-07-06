@@ -301,7 +301,10 @@ scheduler_events = {
         "*/30 * * * *": [
             "benkas_erp.site_safety_assets.gate_pass_scheduler.flag_overdue_passes"
         ]
-    }
+    },
+    "weekly": [
+        "benkas_erp.setup.client_mis.weekly_scheduler"
+    ]
 }
 
 # App tile on the /apps screen.

@@ -198,6 +198,74 @@ ORDER BY parent.subject, t.subject
 """,
     },
     {
+        "name": "Gate Register", "ref_doctype": "Gate Entry", "module": "Manpower",
+        "query": """
+SELECT
+  x.ts          AS "Date / Time:Datetime:165",
+  x.etype       AS "Type:Data:135",
+  x.name_desc   AS "Name / Description:Data:200",
+  x.contractor  AS "Contractor:Data:150",
+  x.section     AS "Section:Data:130",
+  x.direction   AS "Dir:Data:55",
+  x.source      AS "Source:Data:130",
+  x.reference   AS "Reference:Data:160",
+  x.recorded_by AS "Recorded By:Data:150"
+FROM (
+  SELECT ge.time_in ts,
+    CASE ge.person_type WHEN 'Employee' THEN 'Person-Staff' WHEN 'Labour Master' THEN 'Person-Labour'
+      ELSE 'Person-Contractor' END etype,
+    ge.person name_desc,
+    (SELECT lm.contractor FROM `tabLabour Master` lm WHERE lm.name = ge.person) contractor,
+    ge.plant_section section, 'IN' direction, 'Gate Entry' source, ge.name reference, ge.owner recorded_by
+  FROM `tabGate Entry` ge WHERE ge.time_in IS NOT NULL
+  UNION ALL
+  SELECT ge.time_out,
+    CASE ge.person_type WHEN 'Employee' THEN 'Person-Staff' WHEN 'Labour Master' THEN 'Person-Labour'
+      ELSE 'Person-Contractor' END,
+    ge.person, (SELECT lm.contractor FROM `tabLabour Master` lm WHERE lm.name = ge.person),
+    ge.plant_section, 'OUT', 'Gate Entry', ge.name, ge.owner
+  FROM `tabGate Entry` ge WHERE ge.time_out IS NOT NULL
+  UNION ALL
+  SELECT vl.time_in, 'Visitor', vl.visitor_name, vl.company, vl.plant_section, 'IN', 'Visitor Log', vl.name, vl.owner
+  FROM `tabVisitor Log` vl WHERE vl.time_in IS NOT NULL
+  UNION ALL
+  SELECT vl.time_out, 'Visitor', vl.visitor_name, vl.company, vl.plant_section, 'OUT', 'Visitor Log', vl.name, vl.owner
+  FROM `tabVisitor Log` vl WHERE vl.time_out IS NOT NULL
+  UNION ALL
+  SELECT svl.time_out, 'Vehicle-Site', svl.vehicle, svl.driver, svl.plant_section, 'OUT', 'Site Vehicle Log', svl.name, svl.owner
+  FROM `tabSite Vehicle Log` svl WHERE svl.time_out IS NOT NULL
+  UNION ALL
+  SELECT svl.time_in, 'Vehicle-Site', svl.vehicle, svl.driver, svl.plant_section, 'IN', 'Site Vehicle Log', svl.name, svl.owner
+  FROM `tabSite Vehicle Log` svl WHERE svl.time_in IS NOT NULL
+  UNION ALL
+  SELECT TIMESTAMP(pr.posting_date, pr.posting_time), 'Vehicle-Material',
+    CONCAT(pr.supplier, CASE WHEN pr.weighbridge_slip_no IS NOT NULL AND pr.weighbridge_slip_no != ''
+      THEN CONCAT(' / WB ', pr.weighbridge_slip_no) ELSE '' END),
+    pr.supplier, pr.plant_section, 'IN', 'Purchase Receipt', pr.name, pr.owner
+  FROM `tabPurchase Receipt` pr WHERE pr.docstatus < 2 AND pr.posting_date IS NOT NULL
+  UNION ALL
+  SELECT ctr.creation, 'Tools', ctr.tool_description, ctr.contractor, NULL, 'IN', 'Contractor Tools Register', ctr.name, ctr.owner
+  FROM `tabContractor Tools Register` ctr
+  UNION ALL
+  SELECT ctr.modified, 'Tools', ctr.tool_description, ctr.contractor, NULL, 'OUT', 'Contractor Tools Register', ctr.name, ctr.owner
+  FROM `tabContractor Tools Register` ctr WHERE ctr.status IN ('Returned', 'Mismatch')
+  UNION ALL
+  SELECT gp.actual_out_time, 'Gate Pass', gp.person, NULL, gp.plant_section, 'OUT', 'Gate Pass', gp.name, gp.owner
+  FROM `tabGate Pass` gp WHERE gp.actual_out_time IS NOT NULL
+  UNION ALL
+  SELECT gp.actual_return_time, 'Gate Pass', gp.person, NULL, gp.plant_section, 'IN', 'Gate Pass', gp.name, gp.owner
+  FROM `tabGate Pass` gp WHERE gp.actual_return_time IS NOT NULL
+) x
+WHERE x.ts IS NOT NULL
+  AND DATE(x.ts) BETWEEN %(from_date)s AND %(to_date)s
+  AND (%(etype)s = '' OR x.etype = %(etype)s)
+  AND (%(direction)s = '' OR x.direction = %(direction)s)
+  AND (%(section)s = '' OR x.section = %(section)s)
+  AND (%(contractor)s = '' OR x.contractor = %(contractor)s)
+ORDER BY x.ts DESC
+""",
+    },
+    {
         "name": "Labour Attendance Register", "ref_doctype": "Gate Entry", "module": "Manpower",
         "query": """
 SELECT
@@ -267,6 +335,65 @@ SELECT
 FROM `tabSafety Violation Log` svl
 LEFT JOIN `tabLabour Master` lm ON lm.name = svl.person AND svl.person_type = 'Labour Master'
 GROUP BY COALESCE(lm.contractor, svl.person), svl.violation_type
+ORDER BY COUNT(*) DESC
+""",
+    },
+    {
+        "name": "Section Manpower & Work Log", "ref_doctype": "Daily Progress Log",
+        "module": "Work Schedule",
+        # Per-section, per-day: who worked, how many person-days, and the actual
+        # work description logged — answers "what did each section do this week".
+        "query": """
+SELECT
+  ps.section_name AS "Section:Data:160",
+  dpl.log_date    AS "Date:Date:100",
+  (SELECT COUNT(*) FROM `tabDaily Worker Log` w WHERE w.parent = dpl.name) AS "Workers:Int:80",
+  (SELECT ROUND(SUM(w.hours)/8, 1) FROM `tabDaily Worker Log` w WHERE w.parent = dpl.name) AS "Person-days:Float:100",
+  (SELECT GROUP_CONCAT(DISTINCT NULLIF(t.activity_description, '') SEPARATOR ' | ')
+     FROM `tabDaily Task Progress` t WHERE t.parent = dpl.name) AS "Work Description:Data:440"
+FROM `tabDaily Progress Log` dpl
+JOIN `tabPlant Section` ps ON ps.name = dpl.plant_section
+WHERE dpl.docstatus = 1 AND dpl.log_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+ORDER BY dpl.log_date DESC, ps.section_name
+""",
+    },
+    {
+        "name": "Material Consumption by Item", "ref_doctype": "Daily Material Consumed",
+        "module": "Material",
+        # Per-item, per-section quantity actually consumed at site (from the daily
+        # site log) — a breakdown the received-vs-issued report doesn't give.
+        "query": """
+SELECT
+  dmc.item        AS "Item:Link/Item:200",
+  ps.section_name AS "Section:Data:160",
+  ROUND(SUM(dmc.qty), 2) AS "Qty Consumed:Float:120",
+  dmc.uom         AS "UOM:Data:80",
+  COUNT(DISTINCT dpl.name) AS "Log Count:Int:90",
+  MAX(dpl.log_date) AS "Last Used:Date:100"
+FROM `tabDaily Material Consumed` dmc
+JOIN `tabDaily Progress Log` dpl ON dpl.name = dmc.parent AND dpl.docstatus = 1
+JOIN `tabPlant Section` ps ON ps.name = dpl.plant_section
+WHERE dpl.log_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+GROUP BY dmc.item, ps.name, dmc.uom
+ORDER BY SUM(dmc.qty) DESC
+""",
+    },
+    {
+        "name": "Visitor Register Summary", "ref_doctype": "Visitor Log",
+        "module": "Site Safety Assets",
+        # Visitor counts by section — visits, distinct companies/visitors, and how
+        # many are still on site (no time-out).
+        "query": """
+SELECT
+  COALESCE(ps.section_name, '(unassigned)') AS "Section:Data:170",
+  COUNT(*)                        AS "Visits:Int:80",
+  COUNT(DISTINCT vl.company)      AS "Companies:Int:100",
+  COUNT(DISTINCT vl.visitor_name) AS "Distinct Visitors:Int:130",
+  SUM(vl.time_out IS NULL)        AS "Still On Site:Int:110",
+  MAX(vl.time_in)                 AS "Last Visit:Datetime:160"
+FROM `tabVisitor Log` vl
+LEFT JOIN `tabPlant Section` ps ON ps.name = vl.plant_section
+GROUP BY vl.plant_section
 ORDER BY COUNT(*) DESC
 """,
     },

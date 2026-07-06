@@ -13,6 +13,7 @@ from frappe.desk.query_report import run as run_report
 MODULES = ["Benkas Core", "Manpower", "Material", "Work Schedule", "Site Safety Assets"]
 
 WS_EXPECT = {
+    "Gate Management": ("door-open", "cyan"),
     "Manpower Manager": ("users", "blue"),
     "Material and Purchase": ("truck", "orange"),
     "Work Schedule and Progress": ("calendar", "green"),
@@ -415,6 +416,10 @@ def _where(raw):
         elif op == "between":
             conds.append(f"`{field}` BETWEEN %s AND %s")
             params += [val[0], val[1]]
+        elif op == "is" and val == "not set":
+            conds.append(f"(`{field}` IS NULL OR `{field}` = '')")
+        elif op == "is" and val == "set":
+            conds.append(f"(`{field}` IS NOT NULL AND `{field}` != '')")
         else:
             conds.append(f"`{field}` {op} %s")
             params.append(val)
@@ -439,6 +444,8 @@ def _card_value(nc):
 
 def _chart_groups(ch):
     doc = frappe.get_doc("Dashboard Chart", ch)
+    if doc.chart_type != "Group By":
+        return "timeseries"  # e.g. hourly Count chart — not a group-by
     where, params = _where(json.loads(doc.filters_json or "[]"))
     fld = doc.group_by_based_on
     try:
@@ -499,9 +506,13 @@ def run():
 
     # ---------------- Reports ----------------
     print("\n--- REPORTS ---")
+    REPORT_FILTERS = {
+        "Gate Register": {"from_date": "2000-01-01", "to_date": "2100-01-01",
+                          "etype": "", "direction": "", "section": "", "contractor": ""},
+    }
     for r in frappe.get_all("Report", filters={"module": ["in", MODULES]}, pluck="name"):
         try:
-            res = run_report(r, filters={})
+            res = run_report(r, filters=REPORT_FILTERS.get(r, {}))
             n = len(res.get("result", []))
             print(f"  {'PASS' if n > 0 else 'WARN'}  {r:42} {n} rows")
         except Exception as e:
@@ -577,25 +588,33 @@ def run():
     custom_parents = frappe.get_all("DocType", filters={
         "module": ["in", MODULES], "istable": 0}, pluck="name")
     orphans = [d for d in custom_parents if d not in dt_homes]
-    # intentional multi-home doctypes (gate + safety etc.)
-    ALLOWED_MULTI = {"Contractor Tools Register", "Gate Pass", "Plant Section",
-                     "Labour Master", "Contractor", "Delay Reason", "Construction Activity"}
+    # intentional multi-home doctypes (a doctype may be a shortcut in >1 workspace
+    # where used in both — Gate Entry appears on Gate Management as itself + a
+    # "Temporary Passes" filtered view, and on Manpower Manager for acknowledgement).
+    ALLOWED_MULTI = {"Gate Entry", "Gate Pass", "Plant Section", "Contractor",
+                     "Labour Master", "Delay Reason", "Construction Activity"}
     bad_multi = {d: hs for d, hs in dt_homes.items()
-                 if d in custom_parents and len([h for h in hs if "(link)" not in h]) > 1
+                 if d in custom_parents and len(set(h for h in hs if "(link)" not in h)) > 1
                  and d not in ALLOWED_MULTI}
     print(f"  {'PASS' if not orphans else 'FAIL'}  every custom DocType reachable by clicking "
           f"({len(custom_parents)} parents) {'' if not orphans else 'ORPHANS: ' + str(orphans)}")
     print(f"  {'PASS' if not bad_multi else 'FAIL'}  no unintended multi-home shortcuts "
           f"{'' if not bad_multi else str(bad_multi)}")
     ctr = dt_homes.get("Contractor Tools Register", [])
-    print(f"  {'PASS' if any('Manpower' in h for h in ctr) and any('Safety' in h for h in ctr) else 'FAIL'}  "
-          f"Contractor Tools Register on gate + safety workspaces -> {ctr}")
+    print(f"  {'PASS' if any('Gate Management' in h for h in ctr) else 'FAIL'}  "
+          f"Contractor Tools Register lives on Gate Management -> {ctr}")
+    # Gate Security's sidebar = Gate Management only (their one workspace)
+    gm_roles = {r.role for r in frappe.get_doc("Workspace", "Gate Management").roles} if frappe.db.exists("Workspace", "Gate Management") else set()
+    gs_elsewhere = [w for w in ws_names if w != "Gate Management" and frappe.db.exists("Workspace", w)
+                    and "Gate Security" in {r.role for r in frappe.get_doc("Workspace", w).roles}]
+    print(f"  {'PASS' if 'Gate Security' in gm_roles and not gs_elsewhere else 'FAIL'}  "
+          f"Gate Security sees ONLY Gate Management {'' if not gs_elsewhere else 'also: ' + str(gs_elsewhere)}")
 
     reports = frappe.get_all("Report", filters={"module": ["in", MODULES]}, pluck="name")
     unlinked = [r for r in reports if r not in rp_homes]
     print(f"  {'PASS' if not unlinked else 'FAIL'}  every report linked on a workspace "
           f"({len(reports)} reports) {'' if not unlinked else 'UNLINKED: ' + str(unlinked)}")
-    print(f"  {'PASS' if icons_ok else 'FAIL'}  all 6 workspaces have a non-empty icon")
+    print(f"  {'PASS' if icons_ok else 'FAIL'}  all 7 workspaces have a non-empty icon")
 
     # intro + onboarding blocks present
     import json as _json
@@ -605,7 +624,7 @@ def run():
         types = [b.get("type") for b in blocks]
         if "paragraph" not in types:
             intro_bad.append(w)
-        if w != "Benkas MIS" and "onboarding" not in types:
+        if w not in ("Benkas MIS", "Gate Management") and "onboarding" not in types:
             onb_bad.append(w)
     print(f"  {'PASS' if not intro_bad else 'FAIL'}  intro paragraph on every workspace "
           f"{'' if not intro_bad else 'MISSING: ' + str(intro_bad)}")
@@ -673,6 +692,9 @@ def run():
         except Exception as e:
             print(f"  FAIL  print render: {e}")
 
+    # ---------------- Section 360 / Task planning / Client MIS ----------------
+    _section360_planning_and_mis()
+
     # ---------------- Material Request lifecycle (partial -> full -> close) ----------------
     print("\n--- MATERIAL REQUEST LIFECYCLE ---")
     _material_request_lifecycle()
@@ -696,6 +718,101 @@ def run():
 
     print("\n================ END AUDIT ================\n")
 
+
+
+def _section360_planning_and_mis():
+    """Assert the Section 360 view, Task Planner, and Client MIS pack actually
+    work end-to-end — not just that helpers import."""
+    from benkas_erp import section360
+    print("\n--- SECTION 360 / TASK PLANNING ---")
+
+    # 1. both desk pages exist (what renders in the browser)
+    for pg, title in [("section-360", "Section 360"), ("section-task-planner", "Section Task Planner")]:
+        ok = frappe.db.exists("Page", pg) and frappe.db.get_value("Page", pg, "module") == "Benkas Core"
+        print(f"  {'PASS' if ok else 'FAIL'}  desk page '{pg}' present ({title})")
+
+    # 2. planning fields present
+    ps_ok = bool(frappe.get_meta("Plant Section").get_field("section_start_date"))
+    ca_ok = bool(frappe.get_meta("Construction Activity").get_field("default_duration_days"))
+    print(f"  {'PASS' if ps_ok else 'FAIL'}  Plant Section.section_start_date field present")
+    print(f"  {'PASS' if ca_ok else 'FAIL'}  Construction Activity.default_duration_days field present")
+
+    # 3. tasks carry tentative dates + weight (planning pre-fill worked)
+    dated = frappe.db.sql("""SELECT COUNT(*) FROM `tabTask`
+        WHERE parent_task IN (SELECT project_task FROM `tabPlant Section` WHERE project_task IS NOT NULL)
+          AND exp_start_date IS NOT NULL AND exp_end_date IS NOT NULL AND task_weight > 0""")[0][0]
+    print(f"  {'PASS' if dated > 0 else 'FAIL'}  section sub-tasks have tentative dates + weight ({dated})")
+
+    sec = frappe.db.get_value("Plant Section", {"project_task": ["is", "set"]}, "name")
+    if not sec:
+        print("  WARN  no section with a project task to exercise Section 360");
+    else:
+        # 4. Section 360 payload returns every block, with numeric planned/actual
+        p = section360.get_section_360(sec)
+        blocks_ok = all(k in p for k in ("header", "tasks", "manpower", "material", "activity"))
+        h = p.get("header", {})
+        hdr_ok = isinstance(h.get("planned"), (int, float)) and isinstance(h.get("percent_complete"), (int, float)) \
+            and h.get("status") in ("On Track", "Delayed")
+        sub_ok = all(k in p["manpower"] for k in ("today", "person_days_week", "by_contractor")) \
+            and "top_items" in p["material"] and "logs" in p["activity"]
+        print(f"  {'PASS' if blocks_ok and hdr_ok and sub_ok else 'FAIL'}  get_section_360('{sec}') "
+              f"returns all blocks (planned={h.get('planned')} actual={h.get('percent_complete')} "
+              f"status={h.get('status')}, tasks={len(p.get('tasks', []))})")
+
+        # 5. planner get/save roundtrip actually writes to Task
+        gt = section360.get_section_tasks(sec)
+        if gt["tasks"]:
+            t0 = gt["tasks"][0]
+            orig = frappe.db.get_value("Task", t0["name"], "exp_end_date")
+            newdate = frappe.utils.add_days(orig or today(), 3)
+            section360.save_section_tasks(sec, [{"name": t0["name"], "exp_end_date": str(newdate)}])
+            saved = frappe.db.get_value("Task", t0["name"], "exp_end_date")
+            roundtrip = str(saved) == str(newdate)
+            # restore
+            section360.save_section_tasks(sec, [{"name": t0["name"], "exp_end_date": str(orig) if orig else None}])
+            print(f"  {'PASS' if roundtrip else 'FAIL'}  planner save_section_tasks writes dates to Task")
+        else:
+            print("  WARN  section has no sub-tasks to roundtrip")
+
+        # 6. mark_task_complete is whitelisted and rolls the section up
+        wl = getattr(section360.mark_task_complete, "__func__", section360.mark_task_complete)
+        is_wl = getattr(wl, "whitelisted", False) or getattr(section360.mark_task_complete, "whitelisted", False)
+        incomplete = frappe.db.get_value("Task",
+            {"parent_task": frappe.db.get_value("Plant Section", sec, "project_task"),
+             "progress": ["<", 100]}, "name")
+        if incomplete:
+            before = frappe.db.get_value("Plant Section", sec, "section_percent_complete")
+            res = section360.mark_task_complete(incomplete)
+            after = res.get("section_percent")
+            prog = frappe.db.get_value("Task", incomplete, "progress")
+            ok = prog == 100 and after is not None and (after or 0) >= (before or 0)
+            print(f"  {'PASS' if ok else 'FAIL'}  mark_task_complete sets 100% + rolls section "
+                  f"({before} -> {after})")
+        else:
+            print("  n/a   no incomplete task to mark (all done)")
+
+    # 7. Client MIS pack builds a real .docx
+    print("\n--- CLIENT WEEKLY MIS PACK ---")
+    try:
+        import os, tempfile
+        from benkas_erp.setup import client_mis
+        out = os.path.join(tempfile.gettempdir(), "benkas_audit_mis.docx")
+        if os.path.exists(out):
+            os.remove(out)
+        r = client_mis.build(path=out)
+        size = os.path.getsize(out) if os.path.exists(out) else 0
+        print(f"  {'PASS' if size > 5000 else 'FAIL'}  client_mis.build() wrote a .docx "
+              f"({size}b, {r.get('sections')} sections, overall={r.get('overall_actual')}%)")
+        # NB: frappe.get_app_path lowercases joined parts — join the filename with os.path.join
+        sample = os.path.join(frappe.get_app_path("benkas_erp", "..", "docs"), "Sample_Client_Weekly_MIS.docx")
+        print(f"  {'PASS' if os.path.exists(sample) else 'FAIL'}  committed sample present in docs/")
+    except Exception as e:
+        print(f"  FAIL  client_mis.build(): {e}")
+
+    # 8. weekly scheduler is wired in hooks
+    from benkas_erp import hooks as _h
+    sched = _h.scheduler_events.get("weekly", [])
+    print(f"  {'PASS' if any('client_mis' in s for s in sched) else 'FAIL'}  weekly client-MIS scheduler registered")
 
 
 def _apps_screen_tiles():
