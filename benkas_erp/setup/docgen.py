@@ -17,6 +17,16 @@ STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspecti
 WIN_OUT = "/mnt/c/Users/jajul/Downloads/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-06", "Fix /apps tile (root cause: v16 = one tile per app)", [
+        "Root cause of the missing 'Benkas Core' tile: Frappe v16 boot.py builds "
+        "bootinfo.app_data from apps[0] of add_to_apps_screen per installed app, so a "
+        "second entry for the same app is silently dropped (only the first renders).",
+        "Removed the non-working second app tile; Benkas Core is now reached via a "
+        "'Setup / Masters' URL shortcut on the Benkas MIS landing workspace (+ it is "
+        "already a role-permitted workspace in the desk sidebar).",
+        "audit.py now asserts exactly one benkas_erp /apps tile and the Setup shortcut — "
+        "verified against what actually renders (bootinfo), not just get_apps().",
+    ]),
     ("2026-07-06", "Material Request feature gap closed", [
         "Extended standard Material Request with plant_section (mandatory), benkas_task, "
         "and benkas_status — real section/task traceability (not just a bare Link).",

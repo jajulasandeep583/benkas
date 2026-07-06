@@ -96,10 +96,11 @@ def _material_request_lifecycle():
     logs = []
 
     def issue(qty, pct, mr):
+        # intentionally NO task_progress row — this test must not mutate the demo
+        # task's progress (cancel wouldn't revert it), only issue material.
         d = frappe.get_doc({
             "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": today(),
             "incharge": "Administrator",
-            "task_progress": [{"task": erection, "percent_complete": pct}],
             "workers_present": [{"person_type": "Employee", "person": ravi, "task": erection, "hours": 8}],
             "material_consumed": [{"item": item, "qty": qty, "uom": "Nos", "task": erection,
                                    "material_request": mr}],
@@ -390,6 +391,16 @@ def run():
     print(f"  {'PASS' if not onb_bad else 'FAIL'}  onboarding block on 5 operational workspaces "
           f"{'' if not onb_bad else 'MISSING: ' + str(onb_bad)}")
 
+    # /apps tile: Frappe v16 renders only apps[0] per installed app, so there must
+    # be exactly ONE benkas_erp entry; Benkas Core is reached via a MIS shortcut.
+    tiles = [t for t in _apps_screen_tiles() if t["app"] == "benkas_erp"]
+    tile_ok = len(tiles) == 1 and (tiles[0]["total_entries"] == 1)
+    print(f"  {'PASS' if tile_ok else 'FAIL'}  /apps: exactly one benkas_erp tile (v16 = 1 tile/app) "
+          f"-> {[t['title'] for t in tiles]}")
+    mis = frappe.get_doc("Workspace", "Benkas MIS")
+    setup_sc = any(s.type == "URL" and (s.url or "") == "/app/benkas-core" for s in mis.shortcuts)
+    print(f"  {'PASS' if setup_sc else 'FAIL'}  Benkas Core reachable via 'Setup / Masters' shortcut on Benkas MIS")
+
     # ---------------- Daily Progress Log end-to-end flow ----------------
     print("\n--- DAILY PROGRESS LOG (single site-log flow) ---")
     dpl_name = frappe.db.get_value("Daily Progress Log", {"docstatus": 1}, "name")
@@ -460,3 +471,18 @@ def run():
 
     print("\n================ END AUDIT ================\n")
 
+
+
+def _apps_screen_tiles():
+    """Exactly what boot.py puts in bootinfo.app_data (the /apps grid): the FIRST
+    add_to_apps_screen entry per installed app."""
+    tiles = []
+    for app in frappe.get_installed_apps():
+        if app == "frappe":
+            continue
+        entries = frappe.get_hooks("add_to_apps_screen", app_name=app)
+        if entries:
+            e = entries[0]
+            tiles.append({"app": app, "title": e.get("title"), "route": e.get("route"),
+                          "total_entries": len(entries)})
+    return tiles

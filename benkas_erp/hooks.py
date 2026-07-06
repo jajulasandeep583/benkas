@@ -299,19 +299,17 @@ scheduler_events = {
     }
 }
 
-# App tiles on the /apps screen
+# App tile on the /apps screen.
+# NOTE: Frappe v16 supports only ONE tile per installed app — boot.py builds
+# bootinfo.app_data from apps[0] of this hook, so a second entry for the same
+# app is silently dropped. Benkas Core is reached instead via a "Setup /
+# Masters" shortcut on the Benkas MIS landing workspace (see setup/workspaces.py).
 add_to_apps_screen = [
     {
         "name": "benkas_erp",
         "logo": "/assets/frappe/images/frappe-framework-logo.svg",
         "title": "Benkas ERP",
         "route": "/app/benkas-mis",
-    },
-    {
-        "name": "benkas_core",
-        "logo": "/assets/frappe/images/frappe-framework-logo.svg",
-        "title": "Benkas Core",
-        "route": "/app/benkas-core",
     },
 ]
 

@@ -214,7 +214,9 @@ def _workspaces():
 
         {"name": "Benkas MIS", "icon": "layout-dashboard",
          "roles": ["Ramshy Bio Management", "Benkas Project Manager"],
-         "shortcuts": [],
+         # one navigation shortcut to the setup/masters workspace — Benkas Core
+         # can't get its own /apps tile (v16 = one tile per installed app)
+         "shortcuts": [("URL", "Setup / Masters", "/app/benkas-core")],
          "cards": ["overall_progress", "today_headcount", "open_violations", "pending_ack"],
          "charts": ["headcount_section", "violations_section"],
          "links": []},
@@ -258,6 +260,8 @@ def _make_workspace(spec, card_ids, chart_ids, seq):
                 ws_shortcuts.append({"type": "Report", "label": label, "link_to": link_to,
                                      "report_ref_doctype": frappe.db.get_value("Report", link_to, "ref_doctype"),
                                      "color": "Grey"})
+        elif stype == "URL":
+            ws_shortcuts.append({"type": "URL", "label": label, "url": link_to, "color": "Green"})
         elif frappe.db.exists("DocType", link_to):
             ws_shortcuts.append({"type": "DocType", "label": label, "link_to": link_to, "color": "Blue"})
 
