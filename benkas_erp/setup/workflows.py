@@ -2,6 +2,15 @@
 
 import frappe
 
+# ---------------------------------------------------------------------------
+# BEFORE GO-LIVE: set WORKFLOWS_ACTIVE = True and `bench --site <site> migrate`
+# to re-enable all approval workflows. They are OFF during build-out because
+# roles/users aren't finalised and active workflows block basic operations.
+# The status fields (acknowledgement_status, pass_status, permit_status,
+# benkas_status) remain on the doctypes as ordinary editable selects.
+# ---------------------------------------------------------------------------
+WORKFLOWS_ACTIVE = False
+
 STATES = {
     "Pending": "Warning", "Confirmed": "Success", "Disputed": "Danger",
     "Requested": "Warning", "Approved": "Success", "Out": "Info",
@@ -26,13 +35,17 @@ def _ensure_states_and_actions():
 
 
 def _mk(name, doctype, state_field, states, transitions):
+    active = 1 if WORKFLOWS_ACTIVE else 0
     if frappe.db.exists("Workflow", name):
+        # keep the active flag in sync with WORKFLOWS_ACTIVE on every migrate
+        if frappe.db.get_value("Workflow", name, "is_active") != active:
+            frappe.db.set_value("Workflow", name, "is_active", active)
         return
     doc = frappe.get_doc({
         "doctype": "Workflow",
         "workflow_name": name,
         "document_type": doctype,
-        "is_active": 1,
+        "is_active": active,
         "override_status": 1,
         "workflow_state_field": state_field,
         "states": [
@@ -48,8 +61,29 @@ def _mk(name, doctype, state_field, states, transitions):
     doc.insert(ignore_permissions=True)
 
 
+# Status fields the workflows drive — when workflows are OFF these must be
+# ordinary editable selects so people can set them by hand.
+STATUS_FIELDS = [
+    ("Gate Entry", "acknowledgement_status"),
+    ("Gate Pass", "pass_status"),
+    ("Safety Work Permit", "permit_status"),
+    ("Electrical Work Permit", "permit_status"),
+    ("Material Request", "benkas_status"),
+]
+
+
+def _sync_status_field_editability():
+    from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+    read_only = 1 if WORKFLOWS_ACTIVE else 0
+    for dt, field in STATUS_FIELDS:
+        if frappe.db.exists("DocType", dt) and frappe.get_meta(dt).get_field(field):
+            make_property_setter(dt, field, "read_only", read_only, "Check",
+                                 validate_fields_for_doctype=False)
+
+
 def create_workflows():
     _ensure_states_and_actions()
+    _sync_status_field_editability()
 
     _mk("Gate Entry Acknowledgement", "Gate Entry", "acknowledgement_status",
         states=[("Pending", "Section Incharge"), ("Confirmed", "Section Incharge"),

@@ -198,6 +198,44 @@ ORDER BY parent.subject, t.subject
 """,
     },
     {
+        "name": "Labour Attendance Register", "ref_doctype": "Gate Entry", "module": "Manpower",
+        "query": """
+SELECT
+  DATE(ge.time_in)  AS "Date:Date:100",
+  ge.person         AS "Labour:Link/Labour Master:150",
+  lm.contractor     AS "Contractor:Link/Contractor:170",
+  ps.section_name   AS "Section:Data:150",
+  TIME(MIN(ge.time_in))  AS "In:Data:80",
+  TIME(MAX(ge.time_out)) AS "Out:Data:80",
+  ROUND(SUM(TIMESTAMPDIFF(MINUTE, ge.time_in, COALESCE(ge.time_out, ge.time_in))) / 60, 1) AS "Hours:Float:80",
+  GREATEST(ROUND(SUM(TIMESTAMPDIFF(MINUTE, ge.time_in, COALESCE(ge.time_out, ge.time_in))) / 60 - 8, 1), 0) AS "OT (h):Float:80",
+  'Present' AS "Status:Data:90"
+FROM `tabGate Entry` ge
+JOIN `tabLabour Master` lm ON lm.name = ge.person AND ge.person_type = 'Labour Master'
+LEFT JOIN `tabPlant Section` ps ON ps.name = ge.plant_section
+WHERE ge.entry_type = 'In'
+GROUP BY DATE(ge.time_in), ge.person, ge.plant_section
+ORDER BY DATE(ge.time_in) DESC, lm.contractor
+""",
+    },
+    {
+        "name": "Staff Attendance Summary", "ref_doctype": "Attendance", "module": "Manpower",
+        "query": """
+SELECT
+  a.attendance_date AS "Date:Date:100",
+  a.employee        AS "Employee:Link/Employee:130",
+  a.employee_name   AS "Name:Data:160",
+  a.status          AS "Status:Data:100",
+  a.in_time         AS "In:Data:90",
+  a.out_time        AS "Out:Data:90",
+  a.working_hours   AS "Hours:Float:80",
+  a.late_entry      AS "Late:Check:60"
+FROM `tabAttendance` a
+WHERE a.docstatus < 2
+ORDER BY a.attendance_date DESC, a.employee
+""",
+    },
+    {
         "name": "Weekly Section MIS", "ref_doctype": "Daily Progress Log", "module": "Work Schedule",
         "query": """
 SELECT

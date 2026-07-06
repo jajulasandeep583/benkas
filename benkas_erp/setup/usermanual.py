@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 import frappe
 
-WIN_DIR = "/mnt/c/Users/jajul/Downloads"
+WIN_DIR = "/mnt/c/Users/jajul/Downloads/BENKAS PM"
 VERSION = "1.0"
 
 SCAN_URL = "/app/benkas-scan"
@@ -192,14 +192,36 @@ def _ch_gate_security(doc):
         "RECORDED'. No photo, no typing.",
     ])
 
-    doc.add_heading("Someone has no card / a blocked card", level=2)
+    doc.add_heading("The result card & printing a slip", level=2)
     _bullets(doc, [
-        "No card yet: send them to the Benkas PM to be registered and issued a card. Do not "
-        "let unregistered people wander in.",
+        "After every scan a big banner shows: the person's photo & name, what happened "
+        "('IN RECORDED', 'OUT RECORDED', etc.), and a link to open the record. It stays on "
+        "screen until the next scan — you won't miss it.",
+        "For an IN, a '🖨 Print Slip' button appears — one tap prints that person's gate slip "
+        "on the thermal printer (80 mm roll). All gate slips are the same size.",
+        "A 'Recent activity' list at the bottom shows your last ~10 scans (time, name, "
+        "IN/OUT) so you can confirm it recorded and spot a double-scan.",
+    ])
+
+    doc.add_heading("Someone has no card (temporary pass)", level=2)
+    _steps(doc, [
+        "Tap the 'Temp Pass' button (top-right of the Scan Station).",
+        "For a brand-new / one-day worker: type their name (and contractor if labour) + "
+        "section. The system quick-registers them and issues a Temporary Gate Slip.",
+        "For someone whose card is lost: pick them in the 'existing person' box instead — the "
+        "temp slip links to their real record so their history stays continuous.",
+        "Print the Temporary Gate Slip and hand it over. Its QR works for the rest of the day "
+        "exactly like a card — scan it at exit to sign them out.",
+        "It expires at end of day: scanning it the next day shows 'EXPIRED TEMP SLIP — issue "
+        "a new one'.",
+    ])
+
+    doc.add_heading("A blocked or unknown card", level=2)
+    _bullets(doc, [
         "Red 'ENTRY BLOCKED' (labour is Inactive/Exited): their contract ended or they were "
         "deactivated. Do not allow entry — send them to their Incharge or the PM.",
-        "'Not found': the card is damaged or from another site. Send them to the PM for a "
-        "re-issue.",
+        "'Not found' / 'EXPIRED TEMP SLIP': damaged card or yesterday's temp slip. Issue a "
+        "fresh Temporary Pass or send to the PM for a re-issue.",
     ])
 
     doc.add_heading("Material vehicle arrival", level=2)
@@ -217,12 +239,15 @@ def _ch_gate_security(doc):
         "automatically ('VISITOR OUT').",
     ])
 
-    doc.add_heading("Contractor tools in", level=2)
+    doc.add_heading("Contractor tools in / out", level=2)
     _steps(doc, [
-        "When a contractor brings tools, open a new Contractor Tools Register: contractor, "
-        "tool description, quantity, photo.",
-        "At exit, verify the tools leaving match what came in. The system flags a Mismatch if "
-        "returned quantity differs — hold the person and call the Incharge.",
+        "When a contractor brings tools, tap 'Tools In' (top-right) — it opens a new "
+        "Contractor Tools Register. Enter contractor, tool description, quantity, photo "
+        "optional. Save, then print the Contractor Tools Slip (thermal) and hand it over.",
+        "At exit, scan the tools slip QR. The register opens showing the item list — tick / "
+        "enter what's actually going out (Qty Returned), then save.",
+        "If returned quantity differs from what came in, the status auto-flags 'Mismatch' — "
+        "hold the person and call the Incharge.",
     ])
 
     doc.add_heading("Gate Pass verification at exit", level=2)
@@ -415,10 +440,31 @@ def _ch_pm(doc):
         ["Generator Consumption MIS", "Running hours & diesel per generator."],
         ["Vehicle Utilisation", "Trips, hours, distance per site vehicle."],
     ])
+    doc.add_heading("Staff attendance (HR)", level=2)
+    _bullets(doc, [
+        "Every Employee gate scan also creates an HR Employee Checkin (IN/OUT). A default "
+        "'Site General Shift' (09:00-18:00, auto-attendance) turns those checkins into HRMS "
+        "Attendance automatically.",
+        "See it in 'Staff Attendance Summary' (from HRMS Attendance) and 'Labour Attendance "
+        "Register' (labour, from gate entries — the contractor-billing backbone).",
+    ])
     doc.add_heading("The weekly client MIS", level=2)
     _p(doc, "The 'Weekly Section MIS' report plus the Benkas MIS dashboard are what you share "
             "with Ramshy Bio each week — overall progress, manpower, material and safety at a "
             "glance.")
+
+    doc.add_heading("BEFORE GO-LIVE checklist", level=2)
+    _bullets(doc, [
+        "Approval workflows are currently OFF (Gate Entry, Gate Pass, Safety/Electrical "
+        "Permits, Material Request) so basic operations aren't blocked during build-out. The "
+        "status fields are normal editable selects for now. To re-enable enforcement before "
+        "go-live: set WORKFLOWS_ACTIVE = True in setup/workflows.py and run migrate — a "
+        "one-line change.",
+        "Finalise roles and users, then apply User Permissions (restrict each Incharge to "
+        "their section) and required_apps — deferred to the real-site setup.",
+        "Confirm the thermal printer roll width (default 80 mm; change ROLL_WIDTH_MM in "
+        "setup/print_formats.py for 58 mm).",
+    ])
 
 
 def _ch_management(doc):
@@ -553,19 +599,21 @@ def _qr_gate_security():
         b.bold = True
         b.font.size = Pt(13)
         p.add_run(t).font.size = Pt(12)
-    step("IN", "Scan card → check the PHOTO matches the person → tap 📸 Snap & Log IN.")
+    step("IN", "Scan card → check PHOTO matches → pick/confirm section → 📸 Snap & Log IN → 🖨 Print Slip.")
     step("OUT", "Person leaves → scan same card → 'OUT RECORDED'. Done.")
+    step("NO CARD", "Tap 'Temp Pass' → name + section (or pick lost-card person) → print Temp Slip. Works today only.")
     step("GATE PASS", "Scan slip. GREEN = let out. RED 'NOT APPROVED' = send back to Incharge.")
     step("RETURN", "Scan the gate pass again when they come back → 'RETURNED'.")
     step("VISITOR", "New Visitor Log + photo → print slip. Scan slip at exit to close.")
-    step("TOOLS", "Log tools IN. At exit, quantities must match or it flags Mismatch — hold & call Incharge.")
+    step("TOOLS", "Tap 'Tools In' → list items → print Tools Slip. At exit scan it, tick qty out. Mismatch = hold & call Incharge.")
     doc.add_paragraph()
     p = doc.add_paragraph()
     p.add_run("RED SCREEN = STOP. ").bold = True
-    p.add_run("ENTRY BLOCKED = deactivated card, refuse. NOT APPROVED = no exit.")
+    p.add_run("ENTRY BLOCKED = deactivated card, refuse. NOT APPROVED = no exit. "
+              "EXPIRED TEMP SLIP = yesterday's slip, issue a new one.")
     p2 = doc.add_paragraph()
-    p2.add_run("No card? ").bold = True
-    p2.add_run("Send to the Project Manager to register. Never let unregistered people in.")
+    p2.add_run("Every scan shows a big banner with photo + what happened + a Print button, and "
+               "adds to the Recent Activity list. It stays until your next scan.").italic = True
     out = os.path.join(WIN_DIR, "Benkas_QuickRef_Gate_Security.docx")
     doc.save(out)
     _repo_copy(doc, "Benkas_QuickRef_Gate_Security.docx")

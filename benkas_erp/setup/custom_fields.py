@@ -53,6 +53,12 @@ CUSTOM_FIELDS = {
         {"fieldname": "section_percent_complete", "label": "Section % Complete",
          "fieldtype": "Percent", "read_only": 1, "insert_after": "is_active"},
     ],
+    "Gate Entry": [
+        {"fieldname": "is_temporary", "label": "Temporary Pass", "fieldtype": "Check",
+         "insert_after": "gate_pass", "read_only": 1,
+         "description": "Set when this entry was issued via a temporary gate slip (no "
+                        "pre-printed card). The temp slip works only for the day it was issued."},
+    ],
     "Material Request": [
         {"fieldname": "benkas_site_sb", "label": "Benkas Site Details",
          "fieldtype": "Section Break", "insert_after": "company"},

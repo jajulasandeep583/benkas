@@ -79,6 +79,21 @@ def _last_section(person_type, person):
     return ge or frappe.db.get_value("Plant Section", {"is_active": 1}, "name", order_by="creation asc")
 
 
+def _employee_checkin(employee, log_type, ts=None):
+    """Create an HRMS Employee Checkin so attendance marks natively. Silent if
+    HRMS isn't present or the checkin already exists at that instant."""
+    if not frappe.db.exists("DocType", "Employee Checkin"):
+        return
+    try:
+        frappe.get_doc({
+            "doctype": "Employee Checkin", "employee": employee,
+            "log_type": log_type, "time": ts or now_datetime(),
+            "device_id": "Benkas Gate",
+        }).insert(ignore_permissions=True)
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Benkas: employee checkin failed")
+
+
 def _save_photo(image_data, person):
     """Persist a base64 data-URL image as a File and return its URL."""
     from frappe.utils.file_manager import save_file
@@ -99,7 +114,14 @@ def scan(code):
     if not code:
         return _err("Empty scan")
     prefix, _, name = code.partition("-")
-    doctype = DOCTYPE_BY_PREFIX.get(prefix.upper())
+    up = prefix.upper()
+
+    if up == "TMP":        # temporary gate slip
+        return _scan_temp(name)
+    if up == "TOOL":       # contractor tools slip
+        return _scan_tools(name)
+
+    doctype = DOCTYPE_BY_PREFIX.get(up)
     if not doctype:
         return _err(f"Unrecognised code: {code}")
     if not frappe.db.exists(doctype, name):
@@ -114,6 +136,74 @@ def scan(code):
     return _err("Unsupported code")
 
 
+def _scan_temp(ge_name):
+    if not frappe.db.exists("Gate Entry", ge_name):
+        return _err("Temp slip not found")
+    ge = frappe.db.get_value("Gate Entry", ge_name,
+                             ["person_type", "person", "time_in", "time_out", "plant_section"], as_dict=1)
+    from frappe.utils import getdate
+    if getdate(ge.time_in) != getdate(now_datetime()):
+        return _err("EXPIRED TEMP SLIP — issue a new one")
+    card = _person_card(ge.person_type, ge.person) if ge.person else {"name": "Temp worker", "meta": "Temporary"}
+    if ge.time_out:
+        return _err("Temp slip already used for OUT", person=card)
+    ts = now_datetime()
+    frappe.db.set_value("Gate Entry", ge_name, "time_out", ts)
+    if ge.person_type == "Employee" and ge.person:
+        _employee_checkin(ge.person, "OUT", ts)
+    frappe.db.commit()
+    return {"ok": True, "action": "OUT", "message": f"OUT recorded (temp) — {card.get('name')}",
+            "person": card, "reference": ge_name}
+
+
+def _scan_tools(name):
+    if not frappe.db.exists("Contractor Tools Register", name):
+        return _err("Tools slip not found")
+    d = frappe.db.get_value("Contractor Tools Register", name,
+                            ["contractor", "tool_description", "qty", "qty_returned", "status"], as_dict=1)
+    card = {"name": d.contractor or name, "sub": (d.tool_description or "")[:60],
+            "meta": f"Tools · in {d.qty or 0} · status {d.status}"}
+    return {"ok": True, "action": "TOOLS", "reference": name, "person": card,
+            "route": f"/app/contractor-tools-register/{name}",
+            "message": f"Tools register {name} — tick items going out, then save"}
+
+
+@frappe.whitelist()
+def create_temp_pass(name=None, person_type="Labour Master", person=None,
+                     contractor=None, plant_section=None, image=None):
+    """Issue a same-day gate entry + temporary slip for someone without a card.
+    If they exist in masters (card lost) their record is reused so history stays
+    continuous; otherwise a lightweight Labour Master is quick-registered."""
+    if not plant_section:
+        return _err("Plant Section required")
+    if not person:
+        if not (name or "").strip():
+            return _err("Enter the person's name")
+        person = frappe.get_doc({
+            "doctype": "Labour Master", "labour_name": name.strip(), "status": "Active",
+            "contractor": contractor or None, "category": "Unskilled",
+        }).insert(ignore_permissions=True).name
+        person_type = "Labour Master"
+    elif not frappe.db.exists(person_type, person):
+        return _err(f"{person_type} not found: {person}")
+
+    photo_url = _save_photo(image, person) or "/assets/frappe/images/ui/avatar.png"
+    ge = frappe.get_doc({
+        "doctype": "Gate Entry", "person_type": person_type, "person": person,
+        "plant_section": plant_section, "entry_type": "In", "time_in": now_datetime(),
+        "photo": photo_url, "is_temporary": 1,
+    })
+    ge.insert(ignore_permissions=True)
+    if person_type == "Employee":
+        _employee_checkin(person, "IN", ge.time_in)
+    frappe.db.commit()
+    card = _person_card(person_type, person)
+    return {"ok": True, "action": "TEMP_ISSUED", "reference": ge.name, "person": card,
+            "temp_key": "TMP-" + ge.name, "print_doctype": "Gate Entry",
+            "print_format": "Temporary Gate Slip",
+            "message": f"Temp pass issued — {card.get('name')} @ {plant_section}"}
+
+
 def _scan_person(doctype, name):
     if doctype == "Labour Master":
         status = frappe.db.get_value("Labour Master", name, "status")
@@ -123,7 +213,10 @@ def _scan_person(doctype, name):
     card = _person_card(doctype, name)
     open_in = _open_in_entry(doctype, name)
     if open_in:
-        frappe.db.set_value("Gate Entry", open_in, "time_out", now_datetime())
+        ts = now_datetime()
+        frappe.db.set_value("Gate Entry", open_in, "time_out", ts)
+        if doctype == "Employee":
+            _employee_checkin(name, "OUT", ts)
         frappe.db.commit()
         return {"ok": True, "action": "OUT", "message": f"OUT recorded — {card.get('name')}",
                 "person": card, "reference": open_in}
@@ -190,6 +283,8 @@ def create_gate_in(code, plant_section, image=None):
         "time_in": now_datetime(), "photo": photo_url,
     })
     doc.insert(ignore_permissions=True)
+    if doctype == "Employee":
+        _employee_checkin(name, "IN", doc.time_in)
     frappe.db.commit()
     card = _person_card(doctype, name)
     return {"ok": True, "action": "IN_DONE", "reference": doc.name, "person": card,

@@ -70,7 +70,9 @@ def reset():
     """Cancel + delete transactional demo data so it can be regenerated cleanly
     against the current schema (used when doctype fields/workflows change)."""
     for dt in ["Daily Progress Log", "Stock Entry", "Material Request", "Quality Inspection",
-               "Gate Entry"]:
+               "Attendance", "Employee Checkin", "Gate Entry"]:
+        if not frappe.db.exists("DocType", dt):
+            continue
         for name in frappe.get_all(dt, pluck="name", order_by="creation desc"):
             try:
                 doc = frappe.get_doc(dt, name)
@@ -82,6 +84,25 @@ def reset():
                 frappe.log_error(frappe.get_traceback(), f"Benkas: reset {dt} {name}")
     frappe.db.commit()
     print("reset done")
+
+
+def _staff_attendance_demo(employees):
+    """Create IN/OUT Employee Checkins for staff and let HRMS mark Attendance."""
+    from frappe.utils import get_datetime
+    from benkas_erp.setup import attendance as ATT
+    from benkas_erp import scan as SCAN
+    ATT.ensure_shift_type()
+    for emp in employees:
+        if not emp:
+            continue
+        ATT.assign_default_shift(emp)
+        if frappe.db.exists("Employee Checkin", {"employee": emp,
+                                                 "time": [">=", today() + " 00:00:00"]}):
+            continue
+        SCAN._employee_checkin(emp, "IN", get_datetime(today() + " 09:05:00"))
+        SCAN._employee_checkin(emp, "OUT", get_datetime(today() + " 17:40:00"))
+    frappe.db.commit()
+    ATT.process_day()
 
 
 def run():
@@ -117,6 +138,9 @@ def run():
         ]
         made["gate_entries"] = ge
     frappe.db.commit()
+
+    # staff HR attendance: checkins for the two employees -> HRMS marks Attendance
+    _staff_attendance_demo([e1, e2])
 
     # generator + logs
     if not frappe.db.exists("Generator Master", "DG-01"):
@@ -318,8 +342,8 @@ def _material_demo(company):
                            "warehouse": warehouse, "schedule_date": today()}],
             })
             mr.insert(ignore_permissions=True)
-            from frappe.model.workflow import apply_workflow
-            apply_workflow(mr, "Approve")  # submits + benkas_status = Approved
+            mr.submit()  # docstatus 1
+            mr.db_set("benkas_status", "Approved")  # workflows are off; set directly
             mr_name = mr.name
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Benkas: demo MR failed")

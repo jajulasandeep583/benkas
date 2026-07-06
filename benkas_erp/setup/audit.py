@@ -77,6 +77,37 @@ FEATURES = [
 ]
 
 
+def _workflows_and_thermal():
+    print("\n--- WORKFLOWS (deactivated) + THERMAL SLIPS ---")
+    wfs = ["Gate Entry Acknowledgement", "Gate Pass Approval", "Safety Work Permit Approval",
+           "Electrical Work Permit Approval", "Material Request Approval"]
+    all_inactive = all(frappe.db.exists("Workflow", w)
+                       and frappe.db.get_value("Workflow", w, "is_active") == 0 for w in wfs)
+    print(f"  {'PASS' if all_inactive else 'FAIL'}  all 5 workflows exist but INACTIVE")
+    # status fields must be editable now
+    ed = frappe.get_meta("Gate Entry").get_field("acknowledgement_status").read_only == 0
+    print(f"  {'PASS' if ed else 'FAIL'}  status fields editable while workflows off")
+
+    from benkas_erp.setup.print_formats import ROLL_WIDTH_MM
+    slips = [("Staff ID Card", "Employee"), ("Labour ID Card", "Labour Master"),
+             ("Gate Entry Slip", "Gate Entry"), ("Temporary Gate Slip", "Gate Entry"),
+             ("Gate Pass Slip", "Gate Pass"), ("Visitor Slip", "Visitor Log"),
+             ("Contractor Tools Slip", "Contractor Tools Register")]
+    for pf, dt in slips:
+        rec = frappe.db.get_value(dt, {}, "name")
+        if not rec:
+            print(f"  n/a   {pf}: no {dt} record to render")
+            continue
+        try:
+            html = frappe.get_print(dt, rec, print_format=pf)
+            size_ok = f"size: {ROLL_WIDTH_MM}mm" in html
+            qr_ok = "data:image/png;base64" in html
+            mono = "background:#000" not in html.replace(" ", "").replace("!important", "")  # no black fills
+            print(f"  {'PASS' if size_ok and qr_ok else 'FAIL'}  {pf}: {ROLL_WIDTH_MM}mm page={size_ok} QR={qr_ok}")
+        except Exception as e:
+            print(f"  FAIL  {pf}: {e}")
+
+
 def _decode_qr_from_png_datauri(data_uri):
     """Decode a QR from a base64 PNG data-URI (returns the encoded string or None)."""
     try:
@@ -165,7 +196,7 @@ def _scan_loop():
                              "expected_return_time": frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=3)})
         gp.insert(ignore_permissions=True)
         created.append(("Gate Pass", gp.name))
-        apply_workflow(gp, "Approve")
+        frappe.db.set_value("Gate Pass", gp.name, "pass_status", "Approved")  # workflows off
         gk = S.qr_key("Gate Pass", gp.name)
         ro = S.scan(gk)
         print(f"  {'PASS' if ro.get('action') == 'GATE_PASS_OUT' and frappe.db.get_value('Gate Pass', gp.name, 'pass_status') == 'Out' else 'FAIL'}  approved pass scan -> OUT")
@@ -179,6 +210,57 @@ def _scan_loop():
         rv = S.scan(S.qr_key("Visitor Log", vl.name))
         vout = rv.get("action") == "VISITOR_OUT" and frappe.db.get_value("Visitor Log", vl.name, "time_out")
         print(f"  {'PASS' if vout else 'FAIL'}  visitor scan -> signed OUT (time_out set: {bool(vout)})")
+
+        # 7) Employee scan IN/OUT -> Employee Checkin rows
+        company = frappe.db.get_value("Company", {}, "name")
+        emp = frappe.get_doc({"doctype": "Employee", "first_name": "Scan Test Staff",
+                              "gender": "Male", "date_of_birth": "1990-01-01",
+                              "date_of_joining": today(), "company": company, "status": "Active"}
+                             ).insert(ignore_permissions=True)
+        created.insert(0, ("Employee", emp.name))
+        ek = S.qr_key("Employee", emp.name)
+        S.scan(ek)
+        rein = S.create_gate_in(ek, section, None)
+        if rein.get("reference"):
+            created.insert(0, ("Gate Entry", rein["reference"]))
+        cin = frappe.db.exists("Employee Checkin", {"employee": emp.name, "log_type": "IN"})
+        S.scan(ek)  # OUT
+        cout = frappe.db.exists("Employee Checkin", {"employee": emp.name, "log_type": "OUT"})
+        for c in frappe.get_all("Employee Checkin", filters={"employee": emp.name}, pluck="name"):
+            created.insert(0, ("Employee Checkin", c))
+        print(f"  {'PASS' if cin and cout else 'FAIL'}  employee scan creates IN & OUT Employee Checkins")
+
+        # 8) Temporary pass: issue -> scan OUT today -> expired next day
+        rt = S.create_temp_pass(name="Temp Test Worker", plant_section=section)
+        tge = rt.get("reference")
+        if tge:
+            created.insert(0, ("Gate Entry", tge))
+            lm_temp = frappe.db.get_value("Gate Entry", tge, "person")
+            if lm_temp:
+                created.append(("Labour Master", lm_temp))
+        tkey = rt.get("temp_key")
+        rtout = S.scan(tkey)
+        t_ok = rt.get("action") == "TEMP_ISSUED" and rtout.get("action") == "OUT"
+        print(f"  {'PASS' if t_ok else 'FAIL'}  temp pass issued + scanned OUT same day ({tkey})")
+        # backdate to yesterday -> must be rejected as expired
+        frappe.db.set_value("Gate Entry", tge, {"time_in": frappe.utils.add_days(frappe.utils.now_datetime(), -1),
+                                                "time_out": None})
+        rexp = S.scan(tkey)
+        exp_ok = (not rexp.get("ok")) and ("EXPIRED" in rexp.get("message", "").upper())
+        print(f"  {'PASS' if exp_ok else 'FAIL'}  temp slip next day rejected as expired ({rexp.get('message')!r})")
+
+        # 9) Contractor Tools slip: TOOL- round-trips + mismatch flag
+        ctr = frappe.get_doc({"doctype": "Contractor Tools Register", "contractor": contractor,
+                              "tool_description": "Drill + bits", "qty": 3, "qty_returned": 0}
+                             ).insert(ignore_permissions=True)
+        created.insert(0, ("Contractor Tools Register", ctr.name))
+        rtool = S.scan("TOOL-" + ctr.name)
+        tool_ok = rtool.get("action") == "TOOLS" and rtool.get("reference") == ctr.name
+        print(f"  {'PASS' if tool_ok else 'FAIL'}  TOOL- code opens the tools register")
+        ctr.qty_returned = 2  # fewer than taken -> Mismatch via hook
+        ctr.save(ignore_permissions=True)
+        mm = frappe.db.get_value("Contractor Tools Register", ctr.name, "status")
+        print(f"  {'PASS' if mm == 'Mismatch' else 'FAIL'}  tools mismatch auto-flagged (status={mm!r})")
     except Exception as e:
         print(f"  FAIL  scan loop: {e}")
     finally:
@@ -240,7 +322,8 @@ def _material_request_lifecycle():
             "items": [{"item_code": item, "qty": 20, "uom": "Nos", "warehouse": wh, "schedule_date": today()}],
         })
         mr.insert(ignore_permissions=True)
-        apply_workflow(mr, "Approve")
+        mr.submit()
+        mr.db_set("benkas_status", "Approved")  # workflows off; set status directly
 
         issue(12, 62, mr.name)
         st1 = frappe.db.get_value("Material Request", mr.name, "benkas_status")
@@ -250,7 +333,7 @@ def _material_request_lifecycle():
         st2 = frappe.db.get_value("Material Request", mr.name, "benkas_status")
         print(f"  {'PASS' if st2 == 'Issued' else 'FAIL'}  full issue (20/20) -> {st2!r} (expected Issued)")
 
-        apply_workflow(frappe.get_doc("Material Request", mr.name), "Close")
+        frappe.db.set_value("Material Request", mr.name, "benkas_status", "Closed")
         st3 = frappe.db.get_value("Material Request", mr.name, "benkas_status")
         print(f"  {'PASS' if st3 == 'Closed' else 'FAIL'}  manual Close (PM) -> {st3!r} (expected Closed)")
     except Exception as e:
@@ -482,14 +565,31 @@ def run():
             elif s.type == "Report":
                 rp_homes.setdefault(s.link_to, []).append(w)
 
+    # Reachability includes shortcuts AND grouped link cards — every custom
+    # doctype must be clickable from a workspace by a human, not only via URL.
+    for w in ws_names:
+        if not frappe.db.exists("Workspace", w):
+            continue
+        for lk in frappe.get_doc("Workspace", w).links:
+            if lk.type == "Link" and lk.link_type == "DocType":
+                dt_homes.setdefault(lk.link_to, []).append(w + " (link)")
+
     custom_parents = frappe.get_all("DocType", filters={
         "module": ["in", MODULES], "istable": 0}, pluck="name")
     orphans = [d for d in custom_parents if d not in dt_homes]
-    multi = {d: hs for d, hs in dt_homes.items() if d in custom_parents and len(hs) > 1}
-    print(f"  {'PASS' if not orphans else 'FAIL'}  every custom DocType has a home shortcut "
+    # intentional multi-home doctypes (gate + safety etc.)
+    ALLOWED_MULTI = {"Contractor Tools Register", "Gate Pass", "Plant Section",
+                     "Labour Master", "Contractor", "Delay Reason", "Construction Activity"}
+    bad_multi = {d: hs for d, hs in dt_homes.items()
+                 if d in custom_parents and len([h for h in hs if "(link)" not in h]) > 1
+                 and d not in ALLOWED_MULTI}
+    print(f"  {'PASS' if not orphans else 'FAIL'}  every custom DocType reachable by clicking "
           f"({len(custom_parents)} parents) {'' if not orphans else 'ORPHANS: ' + str(orphans)}")
-    print(f"  {'PASS' if not multi else 'FAIL'}  each custom DocType home is exactly one workspace "
-          f"{'' if not multi else 'MULTI: ' + str(multi)}")
+    print(f"  {'PASS' if not bad_multi else 'FAIL'}  no unintended multi-home shortcuts "
+          f"{'' if not bad_multi else str(bad_multi)}")
+    ctr = dt_homes.get("Contractor Tools Register", [])
+    print(f"  {'PASS' if any('Manpower' in h for h in ctr) and any('Safety' in h for h in ctr) else 'FAIL'}  "
+          f"Contractor Tools Register on gate + safety workspaces -> {ctr}")
 
     reports = frappe.get_all("Report", filters={"module": ["in", MODULES]}, pluck="name")
     unlinked = [r for r in reports if r not in rp_homes]
@@ -578,6 +678,8 @@ def run():
     _material_request_lifecycle()
 
     _scan_loop()
+
+    _workflows_and_thermal()
 
     # ---------------- Role -> Workspace visibility ----------------
     print("\n--- WORKSPACE VISIBILITY BY ROLE (sidebar) ---")

@@ -14,9 +14,25 @@ from datetime import datetime
 MODULES = ["Benkas Core", "Manpower", "Material", "Work Schedule", "Site Safety Assets"]
 STD_DOCTYPES = ["Purchase Receipt", "Stock Entry", "Employee", "Quality Inspection"]
 
-WIN_OUT = "/mnt/c/Users/jajul/Downloads/Benkas_ERP_System_Documentation.docx"
+WIN_OUT = "/mnt/c/Users/jajul/Downloads/BENKAS PM/Benkas_ERP_System_Documentation.docx"
 
 CHANGELOG = [
+    ("2026-07-07", "Attendance, thermal slips, temp/tools scans, workflows OFF", [
+        "Staff attendance via HRMS: gate scans create Employee Checkins; a default "
+        "'Site General Shift' (auto-attendance) marks HRMS Attendance. Labour Attendance "
+        "Register + Staff Attendance Summary reports on Manpower Manager.",
+        "Temporary Gate Slip flow (scan station 'Temp Pass'): quick-register/lost-card, "
+        "TMP-<gate entry> QR works same day, rejected as EXPIRED next day.",
+        "ALL gate slips redesigned to one thermal size (ROLL_WIDTH_MM=80, ~72mm, monochrome, "
+        "~30mm QR, @page continuous). Office docs (Daily Progress, Material Request) stay A4.",
+        "All 5 workflows deactivated (WORKFLOWS_ACTIVE=False) for build-out; status fields "
+        "made editable. Re-enable = one-line change + migrate (see manual go-live checklist).",
+        "Contractor Tools: Contractor Tools Slip (TOOL- QR), scan opens the register, "
+        "mismatch flag intact; shortcut added to Manpower (gate) + Site Safety.",
+        "Scan Station UX: searchable Plant Section link control, loud result card with record "
+        "link + Print Slip button, recent-activity list, Temp Pass / Tools In buttons.",
+        "Audit extended for all of the above (0 FAIL); docs moved to Downloads/BENKAS PM.",
+    ]),
     ("2026-07-07", "Working QR scan loop + full usage manual", [
         "Standardised QR content: EMP-/LAB-/GP-/VIS- prefix + record name; backfilled onto "
         "all cards/slips and kept current via after_insert hooks.",
