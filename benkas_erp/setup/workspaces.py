@@ -187,7 +187,7 @@ def _workspaces():
     return [
         {"name": "Gate Management", "icon": "door-open",
          "roles": ["Gate Security", "Section Incharge", "Benkas Project Manager"],
-         "shortcuts": [("URL", "🔳 Scan Station — scan cards & slips here", "/app/benkas-scan"),
+         "shortcuts": [("Page", "Scan Station", "benkas-scan", "scan-line"),
                        ("DocType", "Gate Entry", "Gate Entry"),
                        ("DocType", "Temporary Passes", "Gate Entry", {"is_temporary": 1}),
                        ("DocType", "Visitor Log", "Visitor Log"),
@@ -234,8 +234,8 @@ def _workspaces():
 
         {"name": "Work Schedule and Progress", "icon": "calendar",
          "roles": ["Section Incharge", "Benkas Project Manager"],
-         "shortcuts": [("URL", "🧭 Section 360° — one section, everything", "/app/section-360"),
-                       ("URL", "🗓️ Section Task Planner — set tentative dates", "/app/section-task-planner"),
+         "shortcuts": [("Page", "Section 360°", "section-360", "compass"),
+                       ("Page", "Section Task Planner", "section-task-planner", "calendar-clock"),
                        ("DocType", "Daily Progress Log", "Daily Progress Log"),
                        ("DocType", "Task", "Task"), ("DocType", "Project", "Project"),
                        ("Report", "Section Progress - Planned vs Actual", "Section Progress - Planned vs Actual"),
@@ -276,9 +276,9 @@ def _workspaces():
          "roles": ["Ramshy Bio Management", "Benkas Project Manager"],
          # one navigation shortcut to the setup/masters workspace — Benkas Core
          # can't get its own /apps tile (v16 = one tile per installed app)
-         "shortcuts": [("URL", "🧭 Section 360° — drill into any section", "/app/section-360"),
-                       ("URL", "🗓️ Section Task Planner", "/app/section-task-planner"),
-                       ("URL", "Setup / Masters", "/app/benkas-core")],
+         "shortcuts": [("Page", "Section 360°", "section-360", "compass"),
+                       ("Page", "Section Task Planner", "section-task-planner", "calendar-clock"),
+                       ("URL", "Setup / Masters", "/app/benkas-core", "settings")],
          "cards": ["overall_progress", "today_headcount", "open_violations", "pending_ack"],
          "charts": ["headcount_section", "violations_section"],
          "links": []},
@@ -324,8 +324,17 @@ def _make_workspace(spec, card_ids, chart_ids, seq):
                 ws_shortcuts.append({"type": "Report", "label": label, "link_to": link_to,
                                      "report_ref_doctype": frappe.db.get_value("Report", link_to, "ref_doctype"),
                                      "color": "Grey"})
+        elif stype == "Page":
+            # custom desk page (Scan Station / Section 360 / Task Planner): a proper
+            # Page shortcut with a Lucide icon (extra), not a raw URL with emoji label
+            if frappe.db.exists("Page", link_to):
+                ws_shortcuts.append({"type": "Page", "label": label, "link_to": link_to,
+                                     "color": "Green", "icon": extra})
         elif stype == "URL":
-            ws_shortcuts.append({"type": "URL", "label": label, "url": link_to, "color": "Green"})
+            row = {"type": "URL", "label": label, "url": link_to, "color": "Green"}
+            if extra:  # optional Lucide icon
+                row["icon"] = extra
+            ws_shortcuts.append(row)
         elif frappe.db.exists("DocType", link_to):
             row = {"type": "DocType", "label": label, "link_to": link_to, "color": "Blue"}
             if extra:  # pre-filtered list view (e.g. Temporary Passes)

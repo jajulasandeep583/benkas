@@ -471,7 +471,8 @@ def run():
         w = frappe.get_doc("Workspace", name)
         broken = [s.link_to for s in w.shortcuts
                   if (s.type == "DocType" and not frappe.db.exists("DocType", s.link_to))
-                  or (s.type == "Report" and not frappe.db.exists("Report", s.link_to))]
+                  or (s.type == "Report" and not frappe.db.exists("Report", s.link_to))
+                  or (s.type == "Page" and not frappe.db.exists("Page", s.link_to))]
         card_vals = {frappe.db.get_value("Number Card", c.number_card_name, "label"): _card_value(c.number_card_name)
                      for c in w.number_cards}
         chart_grps = {c.chart_name: _chart_groups(c.chart_name) for c in w.charts}
@@ -730,6 +731,19 @@ def _section360_planning_and_mis():
     for pg, title in [("section-360", "Section 360"), ("section-task-planner", "Section Task Planner")]:
         ok = frappe.db.exists("Page", pg) and frappe.db.get_value("Page", pg, "module") == "Benkas Core"
         print(f"  {'PASS' if ok else 'FAIL'}  desk page '{pg}' present ({title})")
+
+    # 1b. every custom desk page is wired into its workspace(s) as a proper Page
+    # shortcut WITH a Lucide icon (not a raw URL / emoji-in-label hack)
+    PAGE_SHORTCUTS = {"benkas-scan": ["Gate Management"],
+                      "section-360": ["Work Schedule and Progress", "Benkas MIS"],
+                      "section-task-planner": ["Work Schedule and Progress", "Benkas MIS"]}
+    for pg, wss in PAGE_SHORTCUTS.items():
+        for ws in wss:
+            hits = [s for s in frappe.get_doc("Workspace", ws).shortcuts
+                    if s.type == "Page" and s.link_to == pg]
+            ok = bool(hits) and all((s.icon or "").strip() for s in hits)
+            print(f"  {'PASS' if ok else 'FAIL'}  page '{pg}' -> Page shortcut with icon on '{ws}'"
+                  + ("" if ok else "  (missing / still URL / no icon)"))
 
     # 2. planning fields present
     ps_ok = bool(frappe.get_meta("Plant Section").get_field("section_start_date"))
