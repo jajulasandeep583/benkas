@@ -369,8 +369,11 @@ def create():
     try:
         card_ids = _ensure_cards()
         chart_ids = _ensure_charts()
+        # Float sequence_ids below 1.0 keep the 7 Benkas workspaces grouped at the
+        # very top of the sidebar (standard ERPNext/HRMS workspaces start at 1.0 and
+        # are left fully intact below — nothing is hidden).
         for i, spec in enumerate(_workspaces(), start=1):
-            _make_workspace(spec, card_ids, chart_ids, i)
+            _make_workspace(spec, card_ids, chart_ids, round(0.1 * i, 2))
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Benkas: workspaces setup failed")
 
