@@ -22,6 +22,29 @@ BENKAS_WORKSPACES = [
     "Benkas Core", "Benkas MIS",
 ]
 
+# Per-item Lucide icons (all verified to exist in Frappe's lucide sprite) so every
+# sidebar row is iconed. Keyed by DocType / Page name; reports fall back to "table".
+ICONS = {
+    # gate
+    "Gate Entry": "log-in", "Visitor Log": "user-check", "Gate Pass": "ticket",
+    "Contractor Tools Register": "wrench", "Site Vehicle Log": "truck", "Site Vehicle": "car",
+    # masters / people
+    "Plant Section": "map-pin", "Contractor": "hard-hat", "Employee": "user",
+    "Labour Master": "users", "Supplier": "store", "Item": "box",
+    "Construction Activity": "hammer", "Delay Reason": "clock",
+    # material
+    "Material Request": "clipboard-list", "Purchase Receipt": "package-check",
+    "Quality Inspection": "badge-check", "Stock Entry": "arrow-left-right",
+    # work schedule
+    "Daily Progress Log": "clipboard-check", "Task": "list-checks", "Project": "folder-kanban",
+    # safety & assets
+    "Safety Violation Log": "triangle-alert", "Safety Work Permit": "shield-check",
+    "Electrical Work Permit": "zap", "Generator Master": "fuel", "Generator Log": "gauge",
+    "Power Consumption Log": "plug-zap",
+    # pages
+    "benkas-scan": "scan-line", "section-360": "compass", "section-task-planner": "calendar-clock",
+}
+
 
 def _items_for(ws_name, icon):
     ws = frappe.get_doc("Workspace", ws_name)
@@ -37,10 +60,7 @@ def _items_for(ws_name, icon):
         elif lk.type == "Link":
             it = {"label": lk.label, "type": "Link", "link_type": lk.link_type,
                   "link_to": lk.link_to, "idx": idx, "child": 1 if in_section else 0}
-            if lk.link_type == "Report":
-                it["icon"] = "table"
-            elif lk.link_type == "Page":
-                it["icon"] = "panel-top"
+            it["icon"] = ICONS.get(lk.link_to) or ("table" if lk.link_type == "Report" else "file-text")
             items.append(it)
         idx += 1
     return items

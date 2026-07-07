@@ -1,5 +1,6 @@
 {
  "app": "benkas_erp",
+ "creation": "2026-07-07 18:06:27.915737",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "header_icon": "truck",
@@ -30,6 +31,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "clipboard-list",
    "indent": 0,
    "keep_closed": 0,
    "label": "Material Request",
@@ -41,6 +43,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "package-check",
    "indent": 0,
    "keep_closed": 0,
    "label": "Purchase Receipt",
@@ -52,6 +55,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "badge-check",
    "indent": 0,
    "keep_closed": 0,
    "label": "Quality Inspection",
@@ -63,6 +67,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "arrow-left-right",
    "indent": 0,
    "keep_closed": 0,
    "label": "Stock Entry",
@@ -142,6 +147,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "box",
    "indent": 0,
    "keep_closed": 0,
    "label": "Item",
@@ -153,6 +159,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "store",
    "indent": 0,
    "keep_closed": 0,
    "label": "Supplier",
@@ -164,6 +171,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "map-pin",
    "indent": 0,
    "keep_closed": 0,
    "label": "Plant Section",
@@ -173,7 +181,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-07 18:06:27.906766",
+ "modified": "2026-07-07 18:31:05.209095",
  "modified_by": "Administrator",
  "module": "Benkas Core",
  "name": "Material and Purchase",

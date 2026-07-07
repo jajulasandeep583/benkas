@@ -31,6 +31,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "map-pin",
    "indent": 0,
    "keep_closed": 0,
    "label": "Plant Section",
@@ -42,6 +43,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "hard-hat",
    "indent": 0,
    "keep_closed": 0,
    "label": "Contractor",
@@ -53,6 +55,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "users",
    "indent": 0,
    "keep_closed": 0,
    "label": "Labour Master",
@@ -64,6 +67,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "hammer",
    "indent": 0,
    "keep_closed": 0,
    "label": "Construction Activity",
@@ -75,6 +79,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "clock",
    "indent": 0,
    "keep_closed": 0,
    "label": "Delay Reason",
@@ -84,7 +89,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-07 18:06:28.000441",
+ "modified": "2026-07-07 18:31:05.278997",
  "modified_by": "Administrator",
  "module": "Benkas Core",
  "name": "Benkas Core",

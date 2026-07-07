@@ -198,7 +198,11 @@ ORDER BY parent.subject, t.subject
 """,
     },
     {
-        "name": "Gate Register", "ref_doctype": "Gate Entry", "module": "Manpower",
+        # Script Report: optional filters (etype/direction/section/contractor) get
+        # dropped from the payload on the default auto-run, which KeyErrors a raw
+        # Query Report. The real SQL lives in manpower/report/gate_register/gate_register.py
+        # execute(); the query below is retained only as documentation (ignored).
+        "name": "Gate Register", "ref_doctype": "Gate Entry", "module": "Manpower", "script": True,
         "query": """
 SELECT
   x.ts          AS "Date / Time:Datetime:165",
@@ -402,11 +406,16 @@ ORDER BY COUNT(*) DESC
 
 def create_reports():
     for r in REPORTS:
-        q = r["query"].strip()
+        is_script = r.get("script")
+        rtype = "Script Report" if is_script else "Query Report"
+        q = "" if is_script else r["query"].strip()
         if frappe.db.exists("Report", r["name"]):
-            # keep query / ref_doctype in sync with code on every migrate
+            # keep type / query / ref_doctype in sync with code on every migrate
             doc = frappe.get_doc("Report", r["name"])
             changed = False
+            if doc.report_type != rtype:
+                doc.report_type = rtype
+                changed = True
             if (doc.query or "").strip() != q:
                 doc.query = q
                 changed = True
@@ -421,7 +430,7 @@ def create_reports():
             "report_name": r["name"],
             "ref_doctype": r["ref_doctype"],
             "module": r["module"],
-            "report_type": "Query Report",
+            "report_type": rtype,
             "is_standard": "Yes",
             "query": q,
         }).insert(ignore_permissions=True)

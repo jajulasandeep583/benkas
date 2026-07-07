@@ -1,5 +1,6 @@
 {
  "app": "benkas_erp",
+ "creation": "2026-07-07 18:06:27.955542",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "header_icon": "calendar",
@@ -30,7 +31,7 @@
   {
    "child": 1,
    "collapsible": 1,
-   "icon": "panel-top",
+   "icon": "compass",
    "indent": 0,
    "keep_closed": 0,
    "label": "Section 360\u00b0",
@@ -42,7 +43,7 @@
   {
    "child": 1,
    "collapsible": 1,
-   "icon": "panel-top",
+   "icon": "calendar-clock",
    "indent": 0,
    "keep_closed": 0,
    "label": "Section Task Planner",
@@ -54,6 +55,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "clipboard-check",
    "indent": 0,
    "keep_closed": 0,
    "label": "Daily Progress Log",
@@ -65,6 +67,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "list-checks",
    "indent": 0,
    "keep_closed": 0,
    "label": "Task",
@@ -76,6 +79,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "folder-kanban",
    "indent": 0,
    "keep_closed": 0,
    "label": "Project",
@@ -167,6 +171,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "hammer",
    "indent": 0,
    "keep_closed": 0,
    "label": "Construction Activity",
@@ -178,6 +183,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "clock",
    "indent": 0,
    "keep_closed": 0,
    "label": "Delay Reason",
@@ -189,6 +195,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "map-pin",
    "indent": 0,
    "keep_closed": 0,
    "label": "Plant Section",
@@ -198,7 +205,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-07 18:06:27.939967",
+ "modified": "2026-07-07 18:31:05.231455",
  "modified_by": "Administrator",
  "module": "Benkas Core",
  "name": "Work Schedule and Progress",

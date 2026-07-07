@@ -31,7 +31,7 @@
   {
    "child": 1,
    "collapsible": 1,
-   "icon": "panel-top",
+   "icon": "compass",
    "indent": 0,
    "keep_closed": 0,
    "label": "Section 360\u00b0",
@@ -43,7 +43,7 @@
   {
    "child": 1,
    "collapsible": 1,
-   "icon": "panel-top",
+   "icon": "calendar-clock",
    "indent": 0,
    "keep_closed": 0,
    "label": "Section Task Planner",
@@ -135,7 +135,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-07 18:06:28.013085",
+ "modified": "2026-07-07 18:31:05.291377",
  "modified_by": "Administrator",
  "module": "Benkas Core",
  "name": "Benkas MIS",

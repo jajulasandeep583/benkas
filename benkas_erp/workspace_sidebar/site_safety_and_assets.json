@@ -1,5 +1,6 @@
 {
  "app": "benkas_erp",
+ "creation": "2026-07-07 18:06:27.978147",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "header_icon": "shield",
@@ -30,6 +31,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "triangle-alert",
    "indent": 0,
    "keep_closed": 0,
    "label": "Safety Violation Log",
@@ -41,6 +43,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "shield-check",
    "indent": 0,
    "keep_closed": 0,
    "label": "Safety Work Permit",
@@ -52,6 +55,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "zap",
    "indent": 0,
    "keep_closed": 0,
    "label": "Electrical Work Permit",
@@ -73,6 +77,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "fuel",
    "indent": 0,
    "keep_closed": 0,
    "label": "Generator Master",
@@ -84,6 +89,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "gauge",
    "indent": 0,
    "keep_closed": 0,
    "label": "Generator Log",
@@ -95,6 +101,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "plug-zap",
    "indent": 0,
    "keep_closed": 0,
    "label": "Power Consumption Log",
@@ -174,6 +181,7 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "map-pin",
    "indent": 0,
    "keep_closed": 0,
    "label": "Plant Section",
@@ -183,7 +191,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-07 18:06:27.968887",
+ "modified": "2026-07-07 18:31:05.254805",
  "modified_by": "Administrator",
  "module": "Benkas Core",
  "name": "Site Safety and Assets",
