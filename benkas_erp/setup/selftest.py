@@ -42,9 +42,14 @@ def run():
                               ["name", "manpower_deployed"], as_dict=True)
     out["checks"]["dpl_rollup_manpower(DIST)"] = dpl.manpower_deployed if dpl else "no DPL"
 
-    # 3. Workflow transition: confirm a pending Gate Entry
+    # 3. Workflow transition: confirm a pending Gate Entry.
+    # Workflows ship disabled (WORKFLOWS_ACTIVE=False) — status is set directly, not
+    # via apply_workflow — so only exercise the transition when they're switched on.
+    from benkas_erp.setup.workflows import WORKFLOWS_ACTIVE
     ge = frappe.db.get_value("Gate Entry", {"acknowledgement_status": "Pending"}, "name")
-    if ge:
+    if not WORKFLOWS_ACTIVE:
+        out["checks"]["workflow_confirm"] = "skipped (workflows off)"
+    elif ge:
         try:
             doc = frappe.get_doc("Gate Entry", ge)
             apply_workflow(doc, "Confirm")
