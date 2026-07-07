@@ -17,12 +17,11 @@ def extend_bootinfo(bootinfo):
     if not frappe.db.exists("Workspace", "Benkas Core"):
         return
 
-    logo = app_data[0].get("app_logo_url") or "/assets/frappe/images/frappe-framework-logo.svg"
     app_data.append({
         "app_name": "benkas_core",
         "app_title": "Benkas Core",
         "app_route": "/desk/benkas-core",
-        "app_logo_url": logo,
+        "app_logo_url": "/assets/benkas_erp/images/benkas-core.svg",
         "modules": [],
         "workspaces": ["Benkas Core"],
     })

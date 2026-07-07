@@ -315,7 +315,7 @@ scheduler_events = {
 add_to_apps_screen = [
     {
         "name": "benkas_erp",
-        "logo": "/assets/frappe/images/frappe-framework-logo.svg",
+        "logo": "/assets/benkas_erp/images/benkas-mis.svg",
         "title": "Benkas ERP",
         "route": "/app/benkas-mis",
     },
