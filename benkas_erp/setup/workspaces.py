@@ -202,7 +202,24 @@ def _workspaces():
                        ("Report", "Staff Attendance Summary", "Staff Attendance Summary")],
          "cards": ["people_on_site", "visitors_on_site", "vehicles_out", "overdue_passes", "tools_pending"],
          "charts": ["entries_hour", "entries_category"],
-         "links": [("Gate Reference", ["Plant Section", "Contractor"])]},
+         "links": [
+             ("Gate Operations", [
+                 ("Page", "benkas-scan", "Scan Station"),
+                 ("DocType", "Gate Entry"),
+                 ("DocType", "Visitor Log"),
+                 ("DocType", "Gate Pass"),
+                 ("DocType", "Contractor Tools Register"),
+                 ("DocType", "Site Vehicle Log")]),
+             ("Registers & Reports", [
+                 ("Report", "Gate Register"),
+                 ("Report", "Visitor Register Summary"),
+                 ("Report", "EOD Manpower MIS"),
+                 ("Report", "Labour Attendance Register"),
+                 ("Report", "Staff Attendance Summary")]),
+             ("Masters", [
+                 ("DocType", "Site Vehicle"),
+                 ("DocType", "Plant Section"),
+                 ("DocType", "Contractor")])]},
 
         {"name": "Manpower Manager", "icon": "users",
          "roles": ["Section Incharge", "Benkas Project Manager"],
@@ -215,7 +232,21 @@ def _workspaces():
                        ("Report", "Late Entry and OT Report", "Late Entry and OT Report")],
          "cards": ["today_headcount", "pending_ack", "overdue_passes"],
          "charts": ["headcount_section", "ack_status"],
-         "links": [("Workforce Masters", ["Labour Master", "Contractor", "Plant Section"])]},
+         "links": [
+             ("Workforce", [
+                 ("DocType", "Employee"),
+                 ("DocType", "Gate Entry"),
+                 ("DocType", "Gate Pass")]),
+             ("Attendance & Reports", [
+                 ("Report", "EOD Manpower MIS"),
+                 ("Report", "Labour Attendance Register"),
+                 ("Report", "Staff Attendance Summary"),
+                 ("Report", "Contractor-wise Labour Count"),
+                 ("Report", "Late Entry and OT Report")]),
+             ("Masters", [
+                 ("DocType", "Labour Master"),
+                 ("DocType", "Contractor"),
+                 ("DocType", "Plant Section")])]},
 
         {"name": "Material and Purchase", "icon": "truck",
          "roles": ["Stores Weighbridge Operator", "Benkas Project Manager"],
@@ -230,7 +261,21 @@ def _workspaces():
                        ("Report", "QC Rejection Report", "QC Rejection Report")],
          "cards": ["qc_rejected", "weight_var", "matvalue_today"],
          "charts": ["stock_purpose", "qc_outcome"],
-         "links": [("Reference", ["Plant Section"])]},
+         "links": [
+             ("Procurement", [
+                 ("DocType", "Material Request"),
+                 ("DocType", "Purchase Receipt"),
+                 ("DocType", "Quality Inspection"),
+                 ("DocType", "Stock Entry")]),
+             ("Reports", [
+                 ("Report", "Material Received vs Issued"),
+                 ("Report", "Material Section Stock Balance"),
+                 ("Report", "Material Consumption by Item"),
+                 ("Report", "QC Rejection Report")]),
+             ("Masters", [
+                 ("DocType", "Item"),
+                 ("DocType", "Supplier"),
+                 ("DocType", "Plant Section")])]},
 
         {"name": "Work Schedule and Progress", "icon": "calendar",
          "roles": ["Section Incharge", "Benkas Project Manager"],
@@ -245,7 +290,23 @@ def _workspaces():
                        ("Report", "Weekly Section MIS", "Weekly Section MIS")],
          "cards": ["overall_progress", "active_sections"],
          "charts": ["delay_reasons"],
-         "links": [("Reference", ["Construction Activity", "Delay Reason", "Plant Section"])]},
+         "links": [
+             ("Planning & Progress", [
+                 ("Page", "section-360", "Section 360°"),
+                 ("Page", "section-task-planner", "Section Task Planner"),
+                 ("DocType", "Daily Progress Log"),
+                 ("DocType", "Task"),
+                 ("DocType", "Project")]),
+             ("Reports", [
+                 ("Report", "Section Progress - Planned vs Actual"),
+                 ("Report", "Section WBS Progress"),
+                 ("Report", "Delay Analysis by Section"),
+                 ("Report", "Section Manpower & Work Log"),
+                 ("Report", "Weekly Section MIS")]),
+             ("Masters", [
+                 ("DocType", "Construction Activity"),
+                 ("DocType", "Delay Reason"),
+                 ("DocType", "Plant Section")])]},
 
         {"name": "Site Safety and Assets", "icon": "shield",
          "roles": ["Section Incharge", "Safety Officer", "Generator Electrical Operator", "Benkas Project Manager"],
@@ -261,7 +322,22 @@ def _workspaces():
                        ("Report", "Vehicle Utilisation", "Vehicle Utilisation")],
          "cards": ["open_violations", "active_permits", "tool_mismatch"],
          "charts": ["violations_section", "permit_status"],
-         "links": [("Reference", ["Plant Section"])]},
+         "links": [
+             ("Safety", [
+                 ("DocType", "Safety Violation Log"),
+                 ("DocType", "Safety Work Permit"),
+                 ("DocType", "Electrical Work Permit")]),
+             ("Assets & Utilities", [
+                 ("DocType", "Generator Master"),
+                 ("DocType", "Generator Log"),
+                 ("DocType", "Power Consumption Log")]),
+             ("Reports", [
+                 ("Report", "Safety Violations Summary"),
+                 ("Report", "Safety Violations by Contractor"),
+                 ("Report", "Generator Consumption MIS"),
+                 ("Report", "Vehicle Utilisation")]),
+             ("Masters", [
+                 ("DocType", "Plant Section")])]},
 
         {"name": "Benkas Core", "icon": "settings",
          "roles": ["Benkas Project Manager"],
@@ -270,7 +346,14 @@ def _workspaces():
                        ("DocType", "Labour Master", "Labour Master"),
                        ("DocType", "Delay Reason", "Delay Reason"),
                        ("DocType", "Construction Activity", "Construction Activity")],
-         "cards": ["active_sections"], "charts": [], "links": []},
+         "cards": ["active_sections"], "charts": [],
+         "links": [
+             ("Master Data", [
+                 ("DocType", "Plant Section"),
+                 ("DocType", "Contractor"),
+                 ("DocType", "Labour Master"),
+                 ("DocType", "Construction Activity"),
+                 ("DocType", "Delay Reason")])]},
 
         {"name": "Benkas MIS", "icon": "layout-dashboard",
          "roles": ["Ramshy Bio Management", "Benkas Project Manager"],
@@ -281,7 +364,17 @@ def _workspaces():
                        ("URL", "Setup / Masters", "/app/benkas-core", "settings")],
          "cards": ["overall_progress", "today_headcount", "open_violations", "pending_ack"],
          "charts": ["headcount_section", "violations_section"],
-         "links": []},
+         "links": [
+             ("Planning & Drill-down", [
+                 ("Page", "section-360", "Section 360°"),
+                 ("Page", "section-task-planner", "Section Task Planner")]),
+             ("Executive Reports", [
+                 ("Report", "Weekly Section MIS"),
+                 ("Report", "EOD Manpower MIS"),
+                 ("Report", "Material Received vs Issued"),
+                 ("Report", "Section Progress - Planned vs Actual"),
+                 ("Report", "Safety Violations Summary"),
+                 ("Report", "Generator Consumption MIS")])]},
     ]
 
 
@@ -341,13 +434,24 @@ def _make_workspace(spec, card_ids, chart_ids, seq):
                 row["stats_filter"] = json.dumps(extra)
             ws_shortcuts.append(row)
 
+    # Sidebar link groups (the left-nav in v16). Each group = (label, [items]) where
+    # an item is a typed tuple: ("DocType"|"Report"|"Page", name[, label]).
     links = []
-    for (grp, dts) in spec["links"]:
+    for (grp, items) in spec["links"]:
         links.append({"type": "Card Break", "label": grp})
-        for dt in dts:
-            if frappe.db.exists("DocType", dt):
-                links.append({"type": "Link", "link_type": "DocType", "link_to": dt,
-                              "label": dt, "onboard": 0, "is_query_report": 0})
+        for it in items:
+            ltype, lname = it[0], it[1]
+            llabel = it[2] if len(it) > 2 else lname
+            if ltype == "DocType" and frappe.db.exists("DocType", lname):
+                links.append({"type": "Link", "link_type": "DocType", "link_to": lname,
+                              "label": llabel, "onboard": 0, "is_query_report": 0})
+            elif ltype == "Report" and frappe.db.exists("Report", lname):
+                links.append({"type": "Link", "link_type": "Report", "link_to": lname,
+                              "label": llabel, "is_query_report": 1, "onboard": 0,
+                              "dependencies": frappe.db.get_value("Report", lname, "ref_doctype")})
+            elif ltype == "Page" and frappe.db.exists("Page", lname):
+                links.append({"type": "Link", "link_type": "Page", "link_to": lname,
+                              "label": llabel, "onboard": 0})
 
     number_cards = [{"number_card_name": card_ids[k]} for k in spec["cards"] if card_ids.get(k)]
     charts = [{"chart_name": chart_ids[k], "label": chart_ids[k]} for k in spec["charts"] if chart_ids.get(k)]

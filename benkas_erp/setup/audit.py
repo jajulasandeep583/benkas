@@ -601,6 +601,16 @@ def run():
           f"({len(custom_parents)} parents) {'' if not orphans else 'ORPHANS: ' + str(orphans)}")
     print(f"  {'PASS' if not bad_multi else 'FAIL'}  no unintended multi-home shortcuts "
           f"{'' if not bad_multi else str(bad_multi)}")
+    # v16 left sidebar: each workspace must have a populated Workspace Sidebar record
+    # (the doctype that actually drives the left nav) with grouped Section Break items.
+    for w in ws_names:
+        has_sb = frappe.db.exists("Workspace Sidebar", w)
+        n_items = frappe.db.count("Workspace Sidebar Item", {"parent": w}) if has_sb else 0
+        n_grp = frappe.db.count("Workspace Sidebar Item",
+                                {"parent": w, "type": "Section Break"}) if has_sb else 0
+        ok = has_sb and n_items >= 3 and n_grp >= 1
+        print(f"  {'PASS' if ok else 'FAIL'}  Workspace Sidebar '{w}' populated "
+              f"({n_items} items, {n_grp} groups)")
     ctr = dt_homes.get("Contractor Tools Register", [])
     print(f"  {'PASS' if any('Gate Management' in h for h in ctr) else 'FAIL'}  "
           f"Contractor Tools Register lives on Gate Management -> {ctr}")
