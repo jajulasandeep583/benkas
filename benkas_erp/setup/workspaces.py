@@ -15,10 +15,6 @@ from benkas_erp.setup.onboarding import WORKSPACE_ONBOARDING
 
 SM = "System Manager"
 
-# All 7 Benkas workspaces are nested under this single collapsible parent in the
-# sidebar, so the desk shows one tidy "Benkas ERP" group instead of 7 loose items.
-PARENT = "Benkas ERP"
-
 COLORS = {
     "Gate Management": "cyan",
     "Manpower Manager": "blue", "Material and Purchase": "orange",
@@ -360,7 +356,7 @@ def _make_workspace(spec, card_ids, chart_ids, seq):
 
     fields = {"title": name, "label": name, "module": "Benkas Core", "public": 1,
               "icon": spec["icon"], "indicator_color": COLORS.get(name, "gray"),
-              "sequence_id": seq, "content": content, "parent_page": PARENT}
+              "sequence_id": seq, "content": content, "parent_page": ""}
 
     if frappe.db.exists("Workspace", name):
         doc = frappe.get_doc("Workspace", name)
@@ -378,47 +374,15 @@ def _make_workspace(spec, card_ids, chart_ids, seq):
                        ).insert(ignore_permissions=True)
 
 
-def _make_parent():
-    """Upsert the single 'Benkas ERP' parent workspace that groups all 7 Benkas
-    workspaces into one collapsible sidebar section. It has no parent_page itself
-    (so it renders as a top-level group header), the union of every child role
-    (so exactly Benkas users see the group), and sequence_id 0.05 to sit above the
-    children (0.1-0.7) and all standard workspaces (>=1.0)."""
-    child_roles = sorted({r for spec in _workspaces() for r in spec["roles"]} | {SM})
-    roles = [{"role": r} for r in child_roles if frappe.db.exists("Role", r)]
-    content = json.dumps([
-        {"id": "benkas_hdr", "type": "header",
-         "data": {"text": "<span class='h4'><b>Benkas ERP</b></span>", "col": 12}},
-        {"id": "benkas_intro", "type": "paragraph",
-         "data": {"text": "Ramshy Bio ethanol-plant construction ERP. Pick a section "
-                  "below — gate, manpower, material, work schedule, safety, setup or the "
-                  "executive MIS.", "col": 12}},
-    ])
-    fields = {"title": PARENT, "label": PARENT, "module": "Benkas Core", "public": 1,
-              "icon": "factory", "indicator_color": "blue", "sequence_id": 0.05,
-              "content": content, "parent_page": ""}
-    if frappe.db.exists("Workspace", PARENT):
-        doc = frappe.get_doc("Workspace", PARENT)
-        doc.update(fields)
-        doc.set("roles", roles)
-        doc.set("shortcuts", [])
-        doc.set("links", [])
-        doc.save(ignore_permissions=True)
-    else:
-        frappe.get_doc({"doctype": "Workspace", "name": PARENT, **fields, "roles": roles}
-                       ).insert(ignore_permissions=True)
-
-
 def create():
     try:
         card_ids = _ensure_cards()
         chart_ids = _ensure_charts()
-        # Parent group first so the children's parent_page Link resolves.
-        _make_parent()
-        # Float sequence_ids below 1.0 keep the 7 Benkas workspaces grouped at the
-        # very top of the sidebar (standard ERPNext/HRMS workspaces start at 1.0 and
-        # are left fully intact below — nothing is hidden). All 7 nest under the
-        # single 'Benkas ERP' parent (parent_page set in _make_workspace).
+        # v16 is app-centric: the sidebar shows the CURRENT workspace's own link
+        # groups, not a sibling-workspace tree, and parent/child nesting produces no
+        # visible sidebar group. So the 7 Benkas workspaces stay top-level (grouped by
+        # the 'benkas_erp' app on the /apps desktop screen); sequence 0.1-0.7 keeps
+        # them ordered above the standard workspaces.
         for i, spec in enumerate(_workspaces(), start=1):
             _make_workspace(spec, card_ids, chart_ids, round(0.1 * i, 2))
     except Exception:
