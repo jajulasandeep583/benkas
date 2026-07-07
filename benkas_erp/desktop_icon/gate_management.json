@@ -1,0 +1,21 @@
+{
+ "app": "benkas_erp",
+ "bg_color": "gray",
+ "creation": "2026-07-07 18:42:19.034826",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "door-open",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Gate Management",
+ "link_to": "Gate Management",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-07-07 18:42:19.034826",
+ "modified_by": "Administrator",
+ "name": "Gate Management",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

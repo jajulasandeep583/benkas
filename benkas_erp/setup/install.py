@@ -28,7 +28,7 @@ def setup_all():
     from benkas_erp.setup import (
         roles, custom_fields, permissions, workflows, notifications,
         reports, workspaces, print_formats, activities, onboarding, field_help,
-        attendance, sidebars,
+        attendance, sidebars, desktop_icons,
     )
 
     roles.create_roles()
@@ -40,7 +40,7 @@ def setup_all():
                      workflows.create_workflows, notifications.create_notifications,
                      reports.create_reports, activities.seed_activities,
                      onboarding.create, workspaces.create, sidebars.create,
-                     print_formats.create,
+                     desktop_icons.create, print_formats.create,
                      scan.backfill_barcodes, attendance.ensure_shift_type):
             step()
             frappe.db.commit()

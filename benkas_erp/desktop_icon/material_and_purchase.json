@@ -1,0 +1,21 @@
+{
+ "app": "benkas_erp",
+ "bg_color": "gray",
+ "creation": "2026-07-07 18:42:19.049637",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "truck",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Material and Purchase",
+ "link_to": "Material and Purchase",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-07-07 18:42:19.049637",
+ "modified_by": "Administrator",
+ "name": "Material and Purchase",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}
