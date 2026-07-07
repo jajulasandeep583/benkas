@@ -8,7 +8,10 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+# Benkas ERP builds on ERPNext (Item/Supplier/Purchase Receipt/Stock Entry/Project/
+# Task) and HRMS (Employee/Attendance/Checkin). Enforce them so a real-site install
+# fails fast with a clear message instead of erroring mid-migrate.
+required_apps = ["erpnext", "hrms"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [

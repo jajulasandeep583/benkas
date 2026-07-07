@@ -40,6 +40,13 @@ def _ensure_company():
         frappe.db.get_value("Company", {}, "name")
     if company:
         return company
+    # Only reached when the site has NO company (e.g. ERPNext setup wizard not run).
+    # Company creation makes a "Goods In Transit" warehouse that needs the standard
+    # "Transit" Warehouse Type, which the wizard would have seeded — ensure it so a
+    # bare-site seed doesn't fail with LinkValidationError.
+    if not frappe.db.exists("Warehouse Type", "Transit"):
+        frappe.get_doc({"doctype": "Warehouse Type", "name": "Transit"}).insert(
+            ignore_permissions=True, ignore_if_duplicate=True)
     doc = frappe.get_doc({
         "doctype": "Company",
         "company_name": COMPANY_NAME,
