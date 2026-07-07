@@ -601,6 +601,14 @@ def run():
           f"({len(custom_parents)} parents) {'' if not orphans else 'ORPHANS: ' + str(orphans)}")
     print(f"  {'PASS' if not bad_multi else 'FAIL'}  no unintended multi-home shortcuts "
           f"{'' if not bad_multi else str(bad_multi)}")
+    # all 7 Benkas workspaces nest under the single 'Benkas ERP' sidebar group
+    parent_ok = frappe.db.exists("Workspace", "Benkas ERP") and \
+        not frappe.db.get_value("Workspace", "Benkas ERP", "parent_page")
+    kids = frappe.get_all("Workspace", filters={"module": "Benkas Core"},
+                          fields=["name", "parent_page"])
+    unnested = [k.name for k in kids if k.name != "Benkas ERP" and k.parent_page != "Benkas ERP"]
+    print(f"  {'PASS' if parent_ok and not unnested else 'FAIL'}  all 7 workspaces nest under "
+          f"'Benkas ERP' sidebar group {'' if not unnested else 'NOT NESTED: ' + str(unnested)}")
     ctr = dt_homes.get("Contractor Tools Register", [])
     print(f"  {'PASS' if any('Gate Management' in h for h in ctr) else 'FAIL'}  "
           f"Contractor Tools Register lives on Gate Management -> {ctr}")
