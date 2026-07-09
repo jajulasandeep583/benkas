@@ -28,26 +28,28 @@ class Section360 {
 			.s360 .hdr .stat .l{font-size:12px;opacity:.8;text-transform:uppercase;letter-spacing:.5px}
 			.s360 .pill{display:inline-block;padding:3px 12px;border-radius:12px;font-size:13px;font-weight:800}
 			.s360 .pill.OnTrack{background:#e7f7ec;color:#1a7d3c}
-			.s360 .pill.Delayed{background:#fdeaea;color:#c0271e}
+			.s360 .pill.Attention{background:#fdeaea;color:#c0271e}
 			.s360 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 			@media(max-width:800px){.s360 .grid2{grid-template-columns:1fr}}
 			.s360 .card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e4e8ec);border-radius:12px;padding:16px;margin-bottom:16px}
 			.s360 .card h3{margin:0 0 12px;font-size:15px;color:#16324f;font-weight:800;display:flex;justify-content:space-between}
 			.s360 table{width:100%;border-collapse:collapse}
-			.s360 th,.s360 td{padding:6px 8px;font-size:13px;border-bottom:1px solid #eef1f4;text-align:left}
+			.s360 th,.s360 td{padding:6px 8px;font-size:13px;border-bottom:1px solid #eef1f4;text-align:left;vertical-align:top}
 			.s360 th{color:#667;font-weight:600;font-size:11px;text-transform:uppercase}
 			.s360 td.r,.s360 th.r{text-align:right}
 			.s360 .chip{display:inline-block;padding:2px 9px;border-radius:11px;font-size:11px;font-weight:700}
-			.s360 .chip.Completed{background:#e7f7ec;color:#1a7d3c}
-			.s360 .chip.Delayed{background:#fdeaea;color:#c0271e}
-			.s360 .chip.InProgress{background:#fff4e0;color:#a86400}
-			.s360 .chip.NotStarted{background:#eef1f4;color:#556}
+			.s360 .chip.Green{background:#e7f7ec;color:#1a7d3c}
+			.s360 .chip.Blue{background:#e7eefc;color:#2456c0}
+			.s360 .chip.Red{background:#fdeaea;color:#c0271e}
+			.s360 .chip.Orange{background:#fff4e0;color:#a86400}
+			.s360 .chip.Grey{background:#eef1f4;color:#556}
+			.s360 .pct-in{width:64px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right}
 			.s360 .mini{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
 			.s360 .mini .b{background:#f4f6f9;border-radius:9px;padding:9px 14px;min-width:96px}
 			.s360 .mini .b .n{font-size:20px;font-weight:800;color:#16324f}
 			.s360 .mini .b .l{font-size:11px;color:#778}
-			.s360 .done-btn{font-size:11px;padding:2px 8px}
-			.s360 .thumb{width:46px;height:46px;object-fit:cover;border-radius:6px;border:1px solid #dde}
+			.s360 .thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #dde;margin:1px}
+			.s360 .desc{color:#334;font-size:12px}
 			.s360 .empty{color:#8a94a0;text-align:center;padding:60px}
 			.s360 .kv{color:#556;font-size:12px}
 		</style>
@@ -80,15 +82,18 @@ class Section360 {
 	draw(d) {
 		if (!d) { this.$content.html('<div class="empty">No data.</div>'); return; }
 		const h = d.header;
-		const tasks = (d.tasks || []).map(t => `
+		const tasks = (d.tasks || []).map(t => {
+			const photos = (t.photos || []).map(p =>
+				`<img class="thumb" src="${this.esc(p.image)}" title="${this.esc(p.caption || p.date)}">`).join('');
+			return `
 			<tr>
-				<td>${this.esc(t.subject)}</td>
-				<td class="kv">${t.exp_start_date || '—'} → ${t.exp_end_date || '—'}</td>
-				<td class="r">${Math.round(t.progress || 0)}%</td>
-				<td><span class="chip ${(t.chip||'').replace(/ /g,'')}">${t.chip}</span></td>
-				<td class="r">${t.chip === 'Completed' ? '' :
-					`<button class="btn btn-xs btn-default done-btn" data-task="${this.esc(t.name)}">Mark Done</button>`}</td>
-			</tr>`).join('');
+				<td><b>${this.esc(t.subject)}</b></td>
+				<td class="r"><input type="number" min="0" max="100" class="pct-in" value="${Math.round(t.percent || 0)}" data-task="${this.esc(t.name)}"></td>
+				<td><span class="chip ${this.esc(t.color || 'Grey')}">${this.esc(t.latest_status)}</span></td>
+				<td><div class="desc">${this.esc(t.last_description) || '<span class="kv">—</span>'}</div>
+					${t.last_date ? `<div class="kv">${t.last_date}</div>` : ''}</td>
+				<td>${photos || '<span class="kv">—</span>'}</td>
+			</tr>`; }).join('');
 		const mp = d.manpower, mat = d.material, act = d.activity;
 		const cat = (mp.by_category || []).map(x => `<tr><td>${this.esc(x.k)}</td><td class="r">${x.v}</td></tr>`).join('') || '<tr><td colspan="2" class="kv">No data</td></tr>';
 		const con = (mp.by_contractor || []).map(x => `<tr><td>${this.esc(x.k)}</td><td class="r">${x.v}</td></tr>`).join('') || '<tr><td colspan="2" class="kv">No data</td></tr>';
@@ -98,7 +103,7 @@ class Section360 {
 			<tr>
 				<td class="kv" style="white-space:nowrap">${l.date}</td>
 				<td>${l.photo ? `<img class="thumb" src="${this.esc(l.photo)}">` : ''}</td>
-				<td>${this.esc(l.text)}</td>
+				<td>${l.status ? `<span class="kv">${this.esc(l.status)}</span> ` : ''}${this.esc(l.text)}</td>
 				<td class="r">${l.pct != null ? Math.round(l.pct) + '%' : ''}</td>
 			</tr>`).join('') || '<tr><td colspan="4" class="kv">No progress logs yet</td></tr>';
 
@@ -108,15 +113,16 @@ class Section360 {
 				<div class="who">Section Incharge: <b>${this.esc(h.incharge || '—')}</b>
 					${h.start_date ? ' · Start ' + h.start_date : ''}</div>
 				<div class="bars">
-					<div class="stat"><div class="n">${Math.round(h.percent_complete)}%</div><div class="l">Actual</div></div>
-					<div class="stat"><div class="n">${Math.round(h.planned)}%</div><div class="l">Planned</div></div>
-					<div class="stat"><div class="n"><span class="pill ${h.status.replace(/ /g,'')}">${h.status}${h.status==='Delayed'?' · ~'+h.days+'d':''}</span></div><div class="l">Schedule</div></div>
+					<div class="stat"><div class="n">${Math.round(h.percent_complete)}%</div><div class="l">Complete</div></div>
+					<div class="stat"><div class="n">${h.done}/${h.total_tasks}</div><div class="l">Tasks Done</div></div>
+					<div class="stat"><div class="n">${h.stopped}</div><div class="l">Stopped</div></div>
+					<div class="stat"><div class="n"><span class="pill ${h.status.replace(/ /g,'')}">${h.status}</span></div><div class="l">Status</div></div>
 				</div>
 			</div>
 
 			<div class="card">
 				<h3>Task Checklist <a class="kv" href="/app/section-task-planner">plan dates ›</a></h3>
-				<table><thead><tr><th>Activity</th><th>Planned Window</th><th class="r">Progress</th><th>Status</th><th></th></tr></thead>
+				<table><thead><tr><th>Task</th><th class="r">% Complete</th><th>Latest Status</th><th>Last Update</th><th>Photos</th></tr></thead>
 				<tbody>${tasks || '<tr><td colspan="5" class="kv">No sub-tasks</td></tr>'}</tbody></table>
 			</div>
 
@@ -145,16 +151,19 @@ class Section360 {
 			<div class="card">
 				<h3>Recent Activity
 					<span class="kv">${act.visitors} visitor log(s) · ${act.open_violations} open safety issue(s)</span></h3>
-				<table><thead><tr><th>Date</th><th>Photo</th><th>Work Done</th><th class="r">%</th></tr></thead><tbody>${logs}</tbody></table>
+				<table><thead><tr><th>Date</th><th>Photo</th><th>Work Done / Note</th><th class="r">%</th></tr></thead><tbody>${logs}</tbody></table>
 			</div>`);
 
-		this.$content.find('.done-btn').on('click', e => {
-			const task = $(e.currentTarget).data('task');
-			frappe.confirm('Mark this task 100% complete and roll up the section?', () => {
-				frappe.call('benkas_erp.section360.mark_task_complete', {task}).then(() => {
-					frappe.show_alert({message: 'Task completed', indicator: 'green'});
-					this.load();
-				});
+		this.$content.find('.pct-in').on('change', e => {
+			const $in = $(e.currentTarget);
+			const task = $in.data('task');
+			let val = parseFloat($in.val());
+			if (isNaN(val)) return;
+			val = Math.max(0, Math.min(100, val));
+			$in.val(Math.round(val));
+			frappe.call('benkas_erp.section360.set_task_percent', {task, percent: val}).then(() => {
+				frappe.show_alert({message: 'Progress saved', indicator: 'green'});
+				this.load();
 			});
 		});
 	}

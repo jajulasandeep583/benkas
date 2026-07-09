@@ -200,9 +200,10 @@ def run():
             "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": today(),
             "incharge": "Administrator", "remarks": "Distillation civil complete; erection ongoing.",
             "task_progress": [
-                {"task": civil, "percent_complete": 100, "activity_description": "Foundation & civil complete"},
-                {"task": erection, "percent_complete": 60, "activity_description": "Columns erected",
-                 "delay_reason": "Material Delay"},
+                {"task": civil, "status": "Work Done", "percent_complete": 100,
+                 "work_description": "Foundation and civil work fully complete on site."},
+                {"task": erection, "status": "Stopped — Rain / Natural Cause", "percent_complete": 60,
+                 "work_description": "Heavy rain from noon; erection stopped and columns covered."},
             ],
             "workers_present": [
                 {"person_type": "Employee", "person": e1, "task": erection, "hours": 8},
@@ -213,7 +214,7 @@ def run():
                 {"item": mat["item"], "qty": 30, "uom": "Nos", "task": erection,
                  "material_request": mat.get("mr")},
             ],
-            "photos": [{"image": PLACEHOLDER_IMG, "caption": "Site view"}],
+            "photos": [{"image": PLACEHOLDER_IMG, "caption": "Erection area", "activity_task": erection}],
         })
         dpl.insert(ignore_permissions=True)
         dpl.submit()

@@ -1,7 +1,11 @@
 """
 Section 360 view + Section Task Planner — read-only aggregation over what
-already exists (no new doctypes) plus two write actions: mark a task complete
-and bulk-save tentative task dates.
+already exists (no new doctypes) plus write actions: set a task's %, mark a task
+complete, bulk-save tentative task dates.
+
+The task block is sourced from the manual EOD log: each task shows its current
+% (editable inline by the PM), the latest status chip, the last work
+description, and the photos tagged to that task.
 """
 
 import frappe
@@ -9,7 +13,27 @@ from frappe.utils import getdate, today, add_days, flt
 
 
 # --------------------------------------------------------------------------
+# link query: task dropdowns on the Daily Progress Log are scoped to a section
+# --------------------------------------------------------------------------
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def section_task_query(doctype, txt, searchfield, start, page_len, filters):
+    section = (filters or {}).get("section")
+    parent = frappe.db.get_value("Plant Section", section, "project_task") if section else None
+    if not parent:
+        return []
+    like = f"%{txt}%"
+    return frappe.db.sql(
+        """SELECT name, subject FROM `tabTask`
+           WHERE (parent_task = %(p)s OR name = %(p)s)
+             AND (subject LIKE %(txt)s OR name LIKE %(txt)s)
+           ORDER BY subject LIMIT %(start)s, %(len)s""",
+        {"p": parent, "txt": like, "start": start, "len": page_len})
+
+
+# --------------------------------------------------------------------------
 def _task_status(progress, end_date):
+    """Simple date/% derived label, still used by the Task Planner."""
     progress = flt(progress)
     if progress >= 100:
         return "Completed"
@@ -20,29 +44,56 @@ def _task_status(progress, end_date):
     return "Not Started"
 
 
-def _planned_pct(tasks):
-    """Weighted planned % for the section: each task's planned progress from
-    where 'today' falls between its start and end dates."""
-    tw = sum(flt(t.get("task_weight")) for t in tasks) or 0
-    if not tw:
-        done = sum(1 for t in tasks if _task_status(t.get("progress"), t.get("exp_end_date")) == "Completed")
-        return round(100 * done / len(tasks), 1) if tasks else 0
-    acc = 0.0
-    td = getdate(today())
+def _status_meta(status):
+    if not status:
+        return "Grey", 0
+    m = frappe.db.get_value("Progress Status", status, ["color", "is_stopped"], as_dict=1) or {}
+    return (m.get("color") or "Grey"), int(m.get("is_stopped") or 0)
+
+
+def _latest_progress(task):
+    """Most recent submitted EOD row for a task."""
+    row = frappe.db.sql(
+        """SELECT dtp.status, dtp.work_description, dtp.percent_complete, dpl.log_date
+           FROM `tabDaily Task Progress` dtp
+           JOIN `tabDaily Progress Log` dpl ON dpl.name = dtp.parent
+           WHERE dtp.task = %s AND dpl.docstatus = 1
+           ORDER BY dpl.log_date DESC, dpl.creation DESC LIMIT 1""", task, as_dict=1)
+    if not row:
+        return {}
+    r = row[0]
+    color, stopped = _status_meta(r.status)
+    return {"status": r.status, "color": color, "is_stopped": stopped,
+            "description": r.work_description or "", "date": str(r.log_date)}
+
+
+def _task_photos(section, task, limit=6):
+    return [
+        {"image": r[0], "caption": r[1], "date": str(r[2])}
+        for r in frappe.db.sql(
+            """SELECT dpp.image, dpp.caption, dpl.log_date
+               FROM `tabDaily Progress Photo` dpp
+               JOIN `tabDaily Progress Log` dpl ON dpl.name = dpp.parent
+               WHERE dpp.activity_task = %s AND dpl.plant_section = %s AND dpl.docstatus = 1
+                 AND IFNULL(dpp.image, '') <> ''
+               ORDER BY dpl.log_date DESC LIMIT %s""", (task, section, limit))]
+
+
+def _build_tasks(section, parent):
+    tasks = frappe.get_all("Task", filters={"parent_task": parent},
+                           fields=["name", "subject", "progress", "status",
+                                   "exp_start_date", "exp_end_date"],
+                           order_by="exp_start_date asc, subject asc") if parent else []
     for t in tasks:
-        w = flt(t.get("task_weight"))
-        s, e = t.get("exp_start_date"), t.get("exp_end_date")
-        if not s or not e:
-            p = 0
-        elif td >= getdate(e):
-            p = 100
-        elif td <= getdate(s):
-            p = 0
-        else:
-            span = (getdate(e) - getdate(s)).days or 1
-            p = 100 * (td - getdate(s)).days / span
-        acc += w * p
-    return round(acc / tw, 1)
+        lp = _latest_progress(t.name)
+        t["percent"] = flt(t.get("progress"))
+        t["latest_status"] = lp.get("status") or "Not started"
+        t["color"] = lp.get("color") or "Grey"
+        t["is_stopped"] = lp.get("is_stopped") or 0
+        t["last_description"] = lp.get("description") or ""
+        t["last_date"] = lp.get("date")
+        t["photos"] = _task_photos(section, t.name)
+    return tasks
 
 
 # --------------------------------------------------------------------------
@@ -55,16 +106,11 @@ def get_section_360(section):
                               "section_percent_complete", "section_start_date"], as_dict=1)
     parent = ps.project_task
 
-    tasks = frappe.get_all("Task", filters={"parent_task": parent},
-                           fields=["name", "subject", "exp_start_date", "exp_end_date",
-                                   "progress", "task_weight", "status"],
-                           order_by="exp_start_date asc, subject asc") if parent else []
-    for t in tasks:
-        t["chip"] = _task_status(t.get("progress"), t.get("exp_end_date"))
-    planned = _planned_pct(tasks)
+    tasks = _build_tasks(section, parent)
     actual = flt(ps.section_percent_complete)
-    delayed = any(t["chip"] == "Delayed" for t in tasks) or (actual < planned - 5)
-    days = abs(int(round((actual - planned) / 100 * 30)))  # rough days ahead/behind
+    done = sum(1 for t in tasks if t["percent"] >= 100)
+    stopped = sum(1 for t in tasks if t["is_stopped"])
+    in_progress = sum(1 for t in tasks if 0 < t["percent"] < 100 and not t["is_stopped"])
 
     # ---- manpower ----
     today_headcount = frappe.db.sql(
@@ -112,24 +158,28 @@ def get_section_360(section):
            WHERE se.plant_section=%s AND se.purpose='Material Issue' AND se.docstatus=1
            ORDER BY se.posting_date DESC, se.creation DESC LIMIT 5""", (section,))
 
-    # ---- activity ----
+    # ---- recent activity feed ----
     logs = frappe.get_all("Daily Progress Log", filters={"plant_section": section, "docstatus": 1},
-                          fields=["name", "log_date"], order_by="log_date desc", limit=10)
+                          fields=["name", "log_date", "no_work_today", "no_work_reason"],
+                          order_by="log_date desc", limit=10)
     activity = []
     for lg in logs:
         row = frappe.db.get_value("Daily Task Progress", {"parent": lg.name},
-                                  ["percent_complete", "activity_description"], as_dict=1) or {}
+                                  ["percent_complete", "work_description", "status"], as_dict=1) or {}
         photo = frappe.db.get_value("Daily Progress Photo", {"parent": lg.name}, "image")
+        text = lg.no_work_reason if lg.no_work_today else (row.get("work_description") or "")
         activity.append({"name": lg.name, "date": str(lg.log_date),
-                         "pct": row.get("percent_complete"), "text": row.get("activity_description") or "",
-                         "photo": photo})
+                         "pct": None if lg.no_work_today else row.get("percent_complete"),
+                         "status": "No work" if lg.no_work_today else (row.get("status") or ""),
+                         "text": text, "photo": photo})
     visitors = frappe.db.count("Visitor Log", {"plant_section": section})
     open_violations = frappe.db.count("Safety Violation Log", {"plant_section": section, "status": "Open"})
 
     return {
         "header": {"section": section, "section_name": ps.section_name, "incharge": ps.incharge,
-                   "percent_complete": actual, "planned": planned,
-                   "status": "Delayed" if delayed else "On Track", "days": days,
+                   "percent_complete": actual, "status": "Attention" if stopped else "On Track",
+                   "total_tasks": len(tasks), "done": done, "in_progress": in_progress,
+                   "stopped": stopped,
                    "start_date": str(ps.section_start_date) if ps.section_start_date else None},
         "tasks": tasks,
         "manpower": {"today": today_headcount, "person_days_week": round(pd_week, 1),
@@ -146,19 +196,33 @@ def get_section_360(section):
 
 
 @frappe.whitelist()
-def mark_task_complete(task):
+def set_task_percent(task, percent):
+    """Inline % edit from the Section 360 task checklist (PM)."""
     if not frappe.db.exists("Task", task):
         frappe.throw("Unknown task")
-    frappe.db.set_value("Task", task, {"progress": 100, "status": "Completed"})
-    # roll the section % up, same as a Daily Progress Log submit would
+    pct = max(0, min(100, flt(percent)))
+    vals = {"progress": pct}
+    if pct >= 100:
+        vals["status"] = "Completed"
+    frappe.db.set_value("Task", task, vals)
+    section = _rollup(task)
+    frappe.db.commit()
+    return {"ok": True, "task": task, "percent": pct, "section": section,
+            "section_percent": frappe.db.get_value("Plant Section", section, "section_percent_complete") if section else None}
+
+
+@frappe.whitelist()
+def mark_task_complete(task):
+    return set_task_percent(task, 100)
+
+
+def _rollup(task):
     from benkas_erp.work_schedule.dpl_hooks import _recalc_section
     parent = frappe.db.get_value("Task", task, "parent_task")
     section = frappe.db.get_value("Plant Section", {"project_task": parent}, "name")
     if section:
         _recalc_section(section)
-    frappe.db.commit()
-    return {"ok": True, "task": task, "section": section,
-            "section_percent": frappe.db.get_value("Plant Section", section, "section_percent_complete") if section else None}
+    return section
 
 
 # --------------------------------------------------------------------------

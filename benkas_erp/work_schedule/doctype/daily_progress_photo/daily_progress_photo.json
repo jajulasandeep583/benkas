@@ -8,18 +8,28 @@
  "engine": "InnoDB",
  "field_order": [
   "image",
+  "activity_task",
   "caption"
  ],
  "fields": [
   {
-   "columns": 6,
+   "columns": 5,
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "in_list_view": 1,
    "label": "Image"
   },
   {
-   "columns": 4,
+   "columns": 3,
+   "description": "Optional — tag the task this photo shows, so photos group by task.",
+   "fieldname": "activity_task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task",
+   "options": "Task"
+  },
+  {
+   "columns": 2,
    "fieldname": "caption",
    "fieldtype": "Data",
    "in_list_view": 1,

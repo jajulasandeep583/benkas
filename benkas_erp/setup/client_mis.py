@@ -2,8 +2,10 @@
 Client Weekly MIS Pack — a presentation-grade A4 .docx the PM hands to the
 client (Ramshy Bio) every week. Pulls only from live data (no new doctypes):
 
-    cover · project scorecard · section-wise table · per-section detail (x12)
-    · manpower annex · material annex · exceptions page
+    cover · project scorecard · section-wise table · per-section detail (x12,
+    each = task table with % + status, the week's work narrative, stoppage
+    summary, material, photo captions) · manpower annex · material annex ·
+    stoppage & exceptions page
 
     bench --site benkas.local execute benkas_erp.setup.client_mis.build
     bench --site benkas.local execute benkas_erp.setup.client_mis.build \
@@ -14,7 +16,7 @@ A weekly scheduler (Monday) drops a fresh pack in the BENKAS PM folder.
 
 import frappe
 from frappe.utils import getdate, today, add_days, flt, formatdate
-from benkas_erp.section360 import _planned_pct, _task_status
+from benkas_erp.section360 import _latest_progress
 
 WIN_DIR = "/mnt/c/Users/jajul/Downloads/BENKAS PM"
 NAVY = (0x16, 0x32, 0x4F)
@@ -77,12 +79,10 @@ def _section_rows(week_start, week_end):
     out = []
     for s in sections:
         tasks = frappe.get_all("Task", filters={"parent_task": s.project_task},
-                               fields=["name", "subject", "exp_start_date", "exp_end_date",
-                                       "progress", "task_weight"],
-                               order_by="exp_start_date asc, subject asc") if s.project_task else []
+                               fields=["name", "subject", "progress"],
+                               order_by="subject asc") if s.project_task else []
         for t in tasks:
-            t["chip"] = _task_status(t.get("progress"), t.get("exp_end_date"))
-        planned = _planned_pct(tasks)
+            t["latest_status"] = (_latest_progress(t.name).get("status") or "Not started")
         actual = flt(s.section_percent_complete)
         pdays = frappe.db.sql(
             """SELECT COALESCE(SUM(dwl.hours),0)/8 FROM `tabDaily Worker Log` dwl
@@ -90,27 +90,44 @@ def _section_rows(week_start, week_end):
                WHERE dpl.plant_section=%s AND dpl.log_date BETWEEN %s AND %s""",
             (s.name, week_start, week_end))[0][0] or 0
         work = frappe.db.sql(
-            """SELECT dtp.activity_description, dtp.percent_complete, dpl.log_date
+            """SELECT dtp.work_description, dtp.percent_complete, dtp.status, dpl.log_date
                FROM `tabDaily Task Progress` dtp JOIN `tabDaily Progress Log` dpl ON dpl.name=dtp.parent
                WHERE dpl.plant_section=%s AND dpl.log_date BETWEEN %s AND %s
-                 AND IFNULL(dtp.activity_description,'')<>'' ORDER BY dpl.log_date""",
+                 AND IFNULL(dtp.work_description,'')<>'' ORDER BY dpl.log_date""",
             (s.name, week_start, week_end), as_dict=1)
+        stoppages = frappe.db.sql(
+            """SELECT dtp.status, COUNT(*) FROM `tabDaily Task Progress` dtp
+               JOIN `tabDaily Progress Log` dpl ON dpl.name=dtp.parent
+               JOIN `tabProgress Status` ps2 ON ps2.name=dtp.status AND ps2.is_stopped=1
+               WHERE dpl.plant_section=%s AND dpl.log_date BETWEEN %s AND %s
+               GROUP BY dtp.status ORDER BY 2 DESC""",
+            (s.name, week_start, week_end))
+        no_work = frappe.db.sql(
+            """SELECT COUNT(*) FROM `tabDaily Progress Log`
+               WHERE plant_section=%s AND no_work_today=1 AND log_date BETWEEN %s AND %s""",
+            (s.name, week_start, week_end))[0][0] or 0
         material = frappe.db.sql(
             """SELECT dmc.item, SUM(dmc.qty), dmc.uom
                FROM `tabDaily Material Consumed` dmc JOIN `tabDaily Progress Log` dpl ON dpl.name=dmc.parent
                WHERE dpl.plant_section=%s AND dpl.log_date BETWEEN %s AND %s
                GROUP BY dmc.item, dmc.uom ORDER BY SUM(dmc.qty) DESC""",
             (s.name, week_start, week_end))
+        photos = frappe.db.sql(
+            """SELECT dpp.activity_task, dpl.log_date, dpp.caption
+               FROM `tabDaily Progress Photo` dpp JOIN `tabDaily Progress Log` dpl ON dpl.name=dpp.parent
+               WHERE dpl.plant_section=%s AND dpl.log_date BETWEEN %s AND %s AND IFNULL(dpp.image,'')<>''
+               ORDER BY dpl.log_date""", (s.name, week_start, week_end), as_dict=1)
         visitors = frappe.db.sql(
             """SELECT COUNT(*) FROM `tabVisitor Log` WHERE plant_section=%s
                AND DATE(time_in) BETWEEN %s AND %s""", (s.name, week_start, week_end))[0][0] or 0
-        delayed = [t for t in tasks if t["chip"] == "Delayed"]
-        status = "Delayed" if (delayed or actual < planned - 5) else "On Track"
+        stopped_days = sum(r[1] for r in stoppages) + no_work
+        status = "Attention" if stopped_days else "On Track"
         out.append({
             "section": s.name, "code": s.section_code, "name": s.section_name,
-            "incharge": s.incharge, "planned": planned, "actual": actual, "status": status,
-            "pdays": round(pdays, 1), "tasks": tasks, "delayed": delayed,
-            "work": work, "material": material, "visitors": visitors,
+            "incharge": s.incharge, "actual": actual, "status": status,
+            "pdays": round(pdays, 1), "tasks": tasks, "work": work,
+            "stoppages": stoppages, "no_work": no_work, "stopped_days": stopped_days,
+            "material": material, "photos": photos, "visitors": visitors,
         })
     return out
 
@@ -144,12 +161,18 @@ def _material_annex(week_start, week_end):
     return received, issued
 
 
-def _exceptions(rows, week_start, week_end):
-    delayed = []
-    for r in rows:
-        for t in r["delayed"]:
-            delayed.append([r["code"], t["subject"], t.get("exp_end_date"),
-                            f"{round(flt(t.get('progress')))}%"])
+def _stoppage_annex(week_start, week_end):
+    """Stopped section-days across the week, by reason and by section."""
+    by_reason = frappe.db.sql(
+        """SELECT dtp.status, COUNT(*) FROM `tabDaily Task Progress` dtp
+           JOIN `tabDaily Progress Log` dpl ON dpl.name=dtp.parent
+           JOIN `tabProgress Status` ps2 ON ps2.name=dtp.status AND ps2.is_stopped=1
+           WHERE dpl.log_date BETWEEN %s AND %s
+           GROUP BY dtp.status ORDER BY 2 DESC""", (week_start, week_end))
+    return by_reason
+
+
+def _exceptions(week_start, week_end):
     violations = frappe.get_all("Safety Violation Log", filters={"status": "Open"},
                                 fields=["plant_section", "violation_type", "person", "violation_datetime"],
                                 order_by="violation_datetime desc", limit=25)
@@ -157,11 +180,7 @@ def _exceptions(rows, week_start, week_end):
                                     filters={"pass_status": ["in", ["Out", "Overdue"]],
                                              "expected_return_time": ["<", frappe.utils.now()]},
                                     fields=["name", "person", "expected_return_time"], limit=25)
-    weight_var = frappe.get_all("Purchase Receipt",
-                                filters={"weight_variance_flag": 1, "posting_date": ["between", [week_start, week_end]]},
-                                fields=["name", "supplier", "posting_date"], limit=25) \
-        if frappe.get_meta("Purchase Receipt").get_field("weight_variance_flag") else []
-    return delayed, violations, overdue_passes, weight_var
+    return violations, overdue_passes
 
 
 # --------------------------------------------------------------------------
@@ -178,10 +197,10 @@ def build(week_ending=None, path=None):
 
     n = len(rows) or 1
     overall_actual = round(sum(r["actual"] for r in rows) / n, 1)
-    overall_planned = round(sum(r["planned"] for r in rows) / n, 1)
     total_pdays = round(sum(r["pdays"] for r in rows), 1)
     on_track = sum(1 for r in rows if r["status"] == "On Track")
-    delayed_sections = n - on_track if rows else 0
+    attention_sections = n - on_track if rows else 0
+    total_stopped_days = sum(r["stopped_days"] for r in rows)
 
     doc = Document()
     for section in doc.sections:
@@ -195,10 +214,9 @@ def build(week_ending=None, path=None):
     _p(doc, "Weekly Management Information Report", size=15, align="center")
     _p(doc, f"Week ending {formatdate(week_end, 'dd MMMM yyyy')}", size=13, align="center", italic=True)
     doc.add_paragraph("\n")
-    _p(doc, f"Overall completion: {overall_actual}%  (planned {overall_planned}%)",
-       bold=True, size=13, align="center")
-    _p(doc, f"{on_track} of {n} sections on track  ·  {total_pdays} person-days this week",
-       size=12, align="center")
+    _p(doc, f"Overall completion: {overall_actual}%", bold=True, size=13, align="center")
+    _p(doc, f"{on_track} of {n} sections on track  ·  {total_pdays} person-days this week"
+            f"  ·  {total_stopped_days} stopped section-days", size=12, align="center")
     doc.add_paragraph("\n\n")
     _p(doc, "Prepared by Benkas Engineering — Project Monitoring Cell", size=10, align="center", italic=True)
     doc.add_page_break()
@@ -206,41 +224,49 @@ def build(week_ending=None, path=None):
     # ---- 1. Project scorecard ----
     doc.add_heading("1. Project Scorecard", level=1)
     _table(doc, ["Metric", "Value"], [
-        ["Overall completion (actual)", f"{overall_actual}%"],
-        ["Overall completion (planned)", f"{overall_planned}%"],
-        ["Schedule position", "On track" if overall_actual >= overall_planned - 5 else f"Behind by ~{round(overall_planned-overall_actual,1)} pts"],
+        ["Overall completion", f"{overall_actual}%"],
         ["Sections on track", f"{on_track} of {n}"],
-        ["Sections delayed", str(delayed_sections)],
+        ["Sections needing attention", str(attention_sections)],
         ["Person-days this week", str(total_pdays)],
+        ["Stopped section-days this week", str(total_stopped_days)],
         ["Report window", f"{formatdate(week_start,'dd MMM')} – {formatdate(week_end,'dd MMM yyyy')}"],
     ])
 
     # ---- 2. Section-wise summary ----
     doc.add_heading("2. Section-wise Progress", level=1)
-    _table(doc, ["Code", "Section", "Incharge", "Planned", "Actual", "Status", "P-days (wk)"],
-           [[r["code"], r["name"], r["incharge"] or "—", f"{r['planned']}%",
-             f"{r['actual']}%", r["status"], r["pdays"]] for r in rows])
+    _table(doc, ["Code", "Section", "Incharge", "Complete", "Status", "P-days (wk)", "Stopped days"],
+           [[r["code"], r["name"], r["incharge"] or "—", f"{r['actual']}%",
+             r["status"], r["pdays"], r["stopped_days"]] for r in rows])
 
     # ---- 3. Per-section detail ----
     doc.add_page_break()
     doc.add_heading("3. Section Detail", level=1)
     for r in rows:
         doc.add_heading(f"{r['code']} — {r['name']}", level=2)
-        _p(doc, f"Incharge: {r['incharge'] or '—'}   |   Actual {r['actual']}%  ·  Planned {r['planned']}%  ·  "
-                f"{r['status']}   |   {r['pdays']} person-days this week   |   {r['visitors']} visitor(s)",
-           size=10)
-        _table(doc, ["Activity", "Planned Window", "Progress", "Status"],
-               [[t["subject"], f"{t.get('exp_start_date') or '—'} → {t.get('exp_end_date') or '—'}",
-                 f"{round(flt(t.get('progress')))}%", t["chip"]] for t in r["tasks"]] or [["No sub-tasks", "", "", ""]])
+        _p(doc, f"Incharge: {r['incharge'] or '—'}   |   {r['actual']}% complete  ·  {r['status']}"
+                f"   |   {r['pdays']} person-days this week   |   {r['visitors']} visitor(s)", size=10)
+        _table(doc, ["Task", "% Complete", "Latest Status"],
+               [[t["subject"], f"{round(flt(t.get('progress')))}%", t["latest_status"]] for t in r["tasks"]]
+               or [["No sub-tasks", "", ""]])
         if r["work"]:
-            _p(doc, "Work done this week:", bold=True, size=10)
-            for w in r["work"][:12]:
-                _p(doc, f"• {formatdate(w.log_date,'dd MMM')}: {w.activity_description}"
-                        + (f"  ({round(flt(w.percent_complete))}%)" if w.percent_complete is not None else ""),
-                   size=9)
+            _p(doc, "What happened this week:", bold=True, size=10)
+            for w in r["work"][:14]:
+                pct = f"  ({round(flt(w.percent_complete))}%)" if w.percent_complete is not None else ""
+                _p(doc, f"• {formatdate(w.log_date,'dd MMM')} [{w.status or '—'}]: {w.work_description}{pct}", size=9)
+        if r["stoppages"] or r["no_work"]:
+            _p(doc, "Stoppages this week:", bold=True, size=10)
+            srows = [[st[0], st[1]] for st in r["stoppages"]]
+            if r["no_work"]:
+                srows.append(["No-work days", r["no_work"]])
+            _table(doc, ["Reason", "Days"], srows)
         if r["material"]:
             _p(doc, "Material consumed this week:", bold=True, size=10)
             _table(doc, ["Item", "Qty", "UOM"], [[m[0], m[1], m[2] or ""] for m in r["material"]])
+        if r["photos"]:
+            _p(doc, f"Photos logged this week ({len(r['photos'])}):", bold=True, size=10)
+            _table(doc, ["Task", "Date", "Caption"],
+                   [[p.activity_task or "—", formatdate(p.log_date, "dd MMM"), p.caption or ""]
+                    for p in r["photos"][:20]])
         doc.add_paragraph("")
 
     # ---- 4. Manpower annex ----
@@ -264,13 +290,14 @@ def build(week_ending=None, path=None):
     _table(doc, ["Section", "Value issued"],
            [[m[0], _money(m[1])] for m in issued] or [["Nothing issued", ""]])
 
-    # ---- 6. Exceptions ----
+    # ---- 6. Stoppages & exceptions ----
     doc.add_page_break()
-    doc.add_heading("6. Exceptions & Attention Required", level=1)
-    delayed, violations, overdue_passes, weight_var = _exceptions(rows, week_start, week_end)
-    _p(doc, "Delayed tasks (past planned end, below 100%)", bold=True, size=11)
-    _table(doc, ["Section", "Task", "Planned End", "Progress"],
-           delayed or [["None", "All tasks on schedule", "", ""]])
+    doc.add_heading("6. Stoppages & Attention Required", level=1)
+    by_reason = _stoppage_annex(week_start, week_end)
+    _p(doc, "Stopped section-days by reason (whole project)", bold=True, size=11)
+    _table(doc, ["Reason", "Section-days"],
+           [[b[0], b[1]] for b in by_reason] or [["None", "No stoppages this week"]])
+    violations, overdue_passes = _exceptions(week_start, week_end)
     _p(doc, "Open safety violations", bold=True, size=11)
     _table(doc, ["Section", "Type", "Person", "When"],
            [[v.plant_section, v.violation_type, v.person, formatdate(v.violation_datetime, "dd MMM")]
@@ -278,10 +305,6 @@ def build(week_ending=None, path=None):
     _p(doc, "Overdue gate passes (tools/material not returned)", bold=True, size=11)
     _table(doc, ["Gate Pass", "Person", "Expected Return"],
            [[g.name, g.person, g.expected_return_time] for g in overdue_passes] or [["None", "", ""]])
-    _p(doc, "Weighbridge variances flagged this week", bold=True, size=11)
-    _table(doc, ["Purchase Receipt", "Supplier", "Date"],
-           [[w.name, w.supplier, formatdate(w.posting_date, "dd MMM")] for w in weight_var]
-           or [["None", "", ""]])
 
     doc.add_paragraph("")
     _p(doc, "— End of report —  Generated by Benkas ERP on "

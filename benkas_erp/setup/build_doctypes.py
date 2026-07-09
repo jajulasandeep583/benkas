@@ -97,6 +97,21 @@ def doctypes():
             ],
         },
         {
+            # Small editable master for the EOD status dropdown. Add/rename rows in
+            # the list view — no code change needed. is_stopped drives the Stoppage
+            # Analysis report; color drives the Section 360 / client-report chip.
+            "name": "Progress Status", "module": "Benkas Core",
+            "autoname": "field:status_name", "naming_rule": "By fieldname",
+            "title_field": "status_name",
+            "fields": [
+                F("status_name", "Status", "Data", reqd=1, unique=1, in_list_view=1),
+                F("is_stopped", "Is a Stoppage", "Check", default="0", in_list_view=1),
+                F("color", "Colour", "Select", options="Green\nBlue\nRed\nOrange\nGrey",
+                  default="Blue", in_list_view=1),
+                F("display_order", "Display Order", "Int", default="0", in_list_view=1),
+            ],
+        },
+        {
             "name": "Construction Activity", "module": "Benkas Core",
             "autoname": "field:activity_name", "naming_rule": "By fieldname",
             "title_field": "activity_name",
@@ -350,17 +365,20 @@ def doctypes():
         {
             "name": "Daily Progress Photo", "module": "Work Schedule", "istable": 1,
             "fields": [
-                F("image", "Image", "Attach Image", in_list_view=1, columns=6),
-                F("caption", "Caption", "Data", in_list_view=1, columns=4),
+                F("image", "Image", "Attach Image", in_list_view=1, columns=5),
+                F("activity_task", "Task", "Link", options="Task", in_list_view=1, columns=3,
+                  description="Optional — tag the task this photo shows, so photos group by task."),
+                F("caption", "Caption", "Data", in_list_view=1, columns=2),
             ],
         },
         {
             "name": "Daily Task Progress", "module": "Work Schedule", "istable": 1,
             "fields": [
                 F("task", "Task", "Link", options="Task", reqd=1, in_list_view=1, columns=3),
+                F("status", "Status", "Link", options="Progress Status", reqd=1, in_list_view=1, columns=2),
                 F("percent_complete", "% Complete", "Percent", in_list_view=1, columns=2),
-                F("activity_description", "Activity", "Small Text", in_list_view=1, columns=4),
-                F("delay_reason", "Delay Reason", "Link", options="Delay Reason", in_list_view=1, columns=2),
+                F("work_description", "Work Description", "Small Text", reqd=1, in_list_view=1, columns=5,
+                  description="What was done today — or, if stopped, why. Required, at least 15 characters."),
             ],
         },
         {
@@ -393,6 +411,10 @@ def doctypes():
                 CB("cb1"),
                 F("incharge", "Incharge", "Link", options="User", default="__user", in_list_view=1),
                 F("stock_entry", "Auto Stock Entry", "Link", options="Stock Entry", read_only=1),
+                F("no_work_today", "No Work Today", "Check", default="0",
+                  description="Tick if nothing happened at this section today (holiday, full rain day, etc.)."),
+                F("no_work_reason", "Reason (no work)", "Small Text",
+                  depends_on="no_work_today", mandatory_depends_on="no_work_today"),
                 SB("sb_progress", "Task Progress"),
                 F("task_progress", "Task Progress", "Table", options="Daily Task Progress"),
                 SB("sb_workers", "Workers Present"),

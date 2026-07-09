@@ -4,13 +4,19 @@ Daily Progress Log = the single end-to-end site log per section per day.
 All logic is server-side (hooks), so a mobile/PWA client POSTing straight to the
 REST API gets the exact same validation and rollups as the desk UI.
 
-validate:
-  - at least one site photo
+The EOD form is deliberately simple — per task row: task, status, % complete,
+work description. Photos are per LOG (>=1), optionally tagged per task.
+
+validate (only what stops garbage):
+  - work_description >= 15 chars, and a status, on every task row
+  - a stopped status must not raise the task's % (warn, never block)
+  - at least one site photo for the day (not one per task)
+  - workers / material pointing at a task with no activity row -> friendly warning
   - every worker row must have a matching Gate Entry (In) for this section/date
-  - auto-flag material rows with no linked Material Request
+  - "No Work Today" short-circuits everything (reason required, tables cleared)
 
 on_submit:
-  - push each Task Progress row's % straight onto Task.progress
+  - push each Task row's typed % straight onto Task.progress (last log wins)
   - accrue manpower-days on Task from Worker rows
   - batch all Material Consumed rows into ONE submitted Stock Entry (Material
     Issue) for the section; consume against a Material Request where linked
@@ -19,15 +25,78 @@ on_submit:
 
 import frappe
 from frappe import _
+from frappe.utils import flt
+
+MIN_DESC = 15
+
+
+def _is_stopped(status):
+    return bool(status) and bool(frappe.db.get_value("Progress Status", status, "is_stopped"))
+
+
+def _section_task_set(section):
+    parent = frappe.db.get_value("Plant Section", section, "project_task")
+    if not parent:
+        return set()
+    return set(frappe.get_all("Task", filters={"parent_task": parent}, pluck="name")) | {parent}
+
+
+def _warn_orphan_task(rows, logged_tasks, label):
+    for r in (rows or []):
+        if r.get("task") and r.task not in logged_tasks:
+            frappe.msgprint(
+                _("Heads up: a {0} row points at {1}, which has no task row today. "
+                  "Add a task row for it so its progress is captured.").format(label, r.task),
+                indicator="orange", alert=True)
 
 
 # --------------------------------------------------------------------------
 def validate(doc, method=None):
-    if not doc.photos:
-        frappe.throw(_("At least one site photo is mandatory on a Daily Progress Log."))
-
     if not doc.incharge:
         doc.incharge = frappe.session.user
+
+    # "Nothing happened today" — reason required, then keep the log clean.
+    if doc.no_work_today:
+        if not (doc.no_work_reason or "").strip():
+            frappe.throw(_("Tick 'No Work Today' means you must type a short reason."))
+        doc.task_progress = []
+        doc.workers_present = []
+        doc.material_consumed = []
+        return
+
+    if not doc.task_progress:
+        frappe.throw(_("Add at least one task row — or tick <b>No Work Today</b>."))
+
+    section_tasks = _section_task_set(doc.plant_section)
+    logged_tasks = set()
+    for r in doc.task_progress:
+        if not r.task:
+            frappe.throw(_("Every task row needs a task selected."))
+        if not r.status:
+            frappe.throw(_("Row for {0}: pick a status.").format(r.task))
+        if len((r.work_description or "").strip()) < MIN_DESC:
+            frappe.throw(_("Row for {0}: describe the work in at least {1} characters "
+                           "(what was done, or why it stopped).").format(r.task, MIN_DESC))
+        if section_tasks and r.task not in section_tasks:
+            frappe.msgprint(_("Heads up: {0} is not a task of section {1}.")
+                            .format(r.task, doc.plant_section), indicator="orange", alert=True)
+        if _is_stopped(r.status) and r.percent_complete is not None:
+            cur = flt(frappe.db.get_value("Task", r.task, "progress"))
+            if flt(r.percent_complete) > cur:
+                frappe.msgprint(
+                    _("Heads up: {0} is marked stopped but its % went up "
+                      "({1}% → {2}%). Usually a stopped task stays at {1}%.")
+                    .format(r.task, round(cur), round(flt(r.percent_complete))),
+                    indicator="orange", alert=True)
+        logged_tasks.add(r.task)
+
+    # photos: at least one per LOG, not per task row
+    if not doc.photos:
+        frappe.throw(_("Add at least one site photo for the day "
+                       "(you don't need one per task)."))
+
+    _warn_orphan_task(doc.workers_present, logged_tasks, "worker")
+    _warn_orphan_task(doc.material_consumed, logged_tasks, "material")
 
     _validate_workers(doc)
 
@@ -54,6 +123,8 @@ def _validate_workers(doc):
 
 # --------------------------------------------------------------------------
 def on_submit(doc, method=None):
+    if doc.no_work_today:
+        return  # nothing to roll up on a no-work day
     _apply_task_progress(doc)
     _accrue_manpower(doc)
     _issue_material(doc)

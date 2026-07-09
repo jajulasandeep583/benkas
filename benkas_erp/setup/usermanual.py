@@ -311,23 +311,28 @@ def _ch_section_incharge(doc):
         "issued against by the daily log.",
     ])
 
-    doc.add_heading("The Daily Progress Log (your main job)", level=2)
-    _p(doc, "One log per section per day captures everything: task progress, who worked, and "
-            "material used. When you submit it, the system updates task %, section %, and "
-            "issues the material automatically.")
+    doc.add_heading("The Daily Progress Log — your evening EOD (your main job)", level=2)
+    _callout(doc, "The whole training",
+             "Every evening on your phone: open EOD, pick each task you touched, set status, "
+             "type what happened, adjust %, add photos, submit. That's it.")
+    _p(doc, "One log per section per day. When you submit it, the system updates task %, "
+            "section %, and issues any material automatically.")
     _steps(doc, [
         "New Daily Progress Log. Section and date are pre-set; you are the Incharge.",
-        "Task Progress table: add a row per sub-task worked on. Pick the task (only tasks "
-        "under your section show), set % complete, write one line of activity, and a Delay "
-        "Reason only if it fell behind.",
-        "Workers Present table: add each person who worked, their task and hours (default 8). "
-        "Note: a worker who has no gate entry for your section today CANNOT be added — the "
-        "log will refuse to save with a clear message. That's deliberate: only people who "
-        "actually came through the gate count.",
-        "Material Consumed table: add item, quantity, unit, task, and (if it was requested) "
-        "link the Material Request. Leave the request blank if there wasn't one — it's just "
-        "flagged 'No MR' for visibility, it won't block you.",
-        "Site Photos: attach at least one photo of the day's work (required).",
+        "Nothing happened today (holiday, full rain day)? Just tick 'No Work Today', type the "
+        "reason, and submit. You're done.",
+        "Otherwise, Task Progress table — one row per task you touched: pick the task (only "
+        "tasks under your section show), pick a Status (Work Done, Work in Progress, or a "
+        "Stopped reason), set % complete, and write a Work Description (what was done, or why "
+        "it stopped — at least 15 characters).",
+        "Workers Present (optional): add each person who worked, their task and hours "
+        "(default 8). A worker with no gate entry for your section today can't be added — "
+        "only people who actually came through the gate count.",
+        "Material Consumed (optional): item, quantity, unit, task, and (if requested) the "
+        "Material Request. Leave the request blank if there wasn't one — it's just flagged "
+        "'No MR', it won't block you.",
+        "Photos: attach at least one photo for the day. You can tag a photo to a task so "
+        "photos group by task — but you don't need a photo for every task.",
         "Submit.",
     ])
     _p(doc, "What happens automatically on submit:", bold=True)

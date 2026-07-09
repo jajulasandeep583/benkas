@@ -153,10 +153,12 @@ DAILY_PROGRESS = A4_CSS + """
       <div class="f"><b>Incharge</b> {{ doc.incharge or '-' }}</div>
       <div class="f"><b>Stock Entry</b> {{ doc.stock_entry or '-' }}</div>
     </div>
+    {% if doc.no_work_today %}<div class="f" style="margin-top:10px"><b>No Work Today</b>
+      {{ doc.no_work_reason or '' }}</div>{% endif %}
     <div style="font-weight:bold;margin-top:10px">Task Progress</div>
-    <table class="t"><tr><th>Task</th><th>% Complete</th><th>Activity</th><th>Delay Reason</th></tr>
-      {% for r in doc.task_progress %}<tr><td>{{ r.task }}</td><td>{{ r.percent_complete }}%</td>
-      <td>{{ r.activity_description or '' }}</td><td>{{ r.delay_reason or '' }}</td></tr>{% endfor %}
+    <table class="t"><tr><th>Task</th><th>Status</th><th>% Complete</th><th>Work Description</th></tr>
+      {% for r in doc.task_progress %}<tr><td>{{ r.task }}</td><td>{{ r.status or '' }}</td>
+      <td>{{ r.percent_complete }}%</td><td>{{ r.work_description or '' }}</td></tr>{% endfor %}
       {% if not doc.task_progress %}<tr><td colspan="4">—</td></tr>{% endif %}
     </table>
     <div style="font-weight:bold;margin-top:10px">Workers Present</div>

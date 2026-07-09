@@ -5,3 +5,6 @@ node_modules/
 .frappe
 *.swp
 .DS_Store
+# Workspaces are code-managed via setup/workspaces.py (upserted every migrate),
+# not shipped as JSON fixtures — ignore the developer_mode auto-export.
+benkas_erp/*/workspace/

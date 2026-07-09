@@ -8,9 +8,9 @@
  "engine": "InnoDB",
  "field_order": [
   "task",
+  "status",
   "percent_complete",
-  "activity_description",
-  "delay_reason"
+  "work_description"
  ],
  "fields": [
   {
@@ -24,25 +24,28 @@
   },
   {
    "columns": 2,
+   "fieldname": "status",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Progress Status",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
    "fieldname": "percent_complete",
    "fieldtype": "Percent",
    "in_list_view": 1,
    "label": "% Complete"
   },
   {
-   "columns": 4,
-   "fieldname": "activity_description",
+   "columns": 5,
+   "description": "What was done today — or, if stopped, why. Required, at least 15 characters.",
+   "fieldname": "work_description",
    "fieldtype": "Small Text",
    "in_list_view": 1,
-   "label": "Activity"
-  },
-  {
-   "columns": 2,
-   "fieldname": "delay_reason",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Delay Reason",
-   "options": "Delay Reason"
+   "label": "Work Description",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,

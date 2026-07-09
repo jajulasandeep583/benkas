@@ -104,8 +104,20 @@
    "icon": "table",
    "indent": 0,
    "keep_closed": 0,
-   "label": "Section Progress - Planned vs Actual",
-   "link_to": "Section Progress - Planned vs Actual",
+   "label": "Weekly Section Report",
+   "link_to": "Weekly Section Report",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "table",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Stoppage Analysis",
+   "link_to": "Stoppage Analysis",
    "link_type": "Report",
    "show_arrow": 0,
    "type": "Link"
@@ -118,18 +130,6 @@
    "keep_closed": 0,
    "label": "Section WBS Progress",
    "link_to": "Section WBS Progress",
-   "link_type": "Report",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 1,
-   "collapsible": 1,
-   "icon": "table",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Delay Analysis by Section",
-   "link_to": "Delay Analysis by Section",
    "link_type": "Report",
    "show_arrow": 0,
    "type": "Link"
@@ -183,6 +183,18 @@
   {
    "child": 1,
    "collapsible": 1,
+   "icon": "file-text",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Progress Status",
+   "link_to": "Progress Status",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
    "icon": "clock",
    "indent": 0,
    "keep_closed": 0,
@@ -205,7 +217,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-07 18:42:18.877773",
+ "modified": "2026-07-09 11:23:07.234525",
  "modified_by": "Administrator",
  "module": "Benkas Core",
  "name": "Work Schedule and Progress",

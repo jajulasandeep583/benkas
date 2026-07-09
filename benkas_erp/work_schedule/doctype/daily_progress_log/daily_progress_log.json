@@ -13,6 +13,8 @@
   "cb1",
   "incharge",
   "stock_entry",
+  "no_work_today",
+  "no_work_reason",
   "sb_progress",
   "task_progress",
   "sb_workers",
@@ -59,6 +61,20 @@
    "label": "Auto Stock Entry",
    "options": "Stock Entry",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Tick if nothing happened at this section today (holiday, full rain day, etc.).",
+   "fieldname": "no_work_today",
+   "fieldtype": "Check",
+   "label": "No Work Today"
+  },
+  {
+   "depends_on": "no_work_today",
+   "fieldname": "no_work_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason (no work)",
+   "mandatory_depends_on": "no_work_today"
   },
   {
    "fieldname": "sb_progress",

@@ -28,7 +28,7 @@ def setup_all():
     from benkas_erp.setup import (
         roles, custom_fields, permissions, workflows, notifications,
         reports, workspaces, print_formats, activities, onboarding, field_help,
-        attendance, sidebars, desktop_icons,
+        attendance, sidebars, desktop_icons, seed,
     )
 
     roles.create_roles()
@@ -37,6 +37,7 @@ def setup_all():
     if _doctypes_ready():
         from benkas_erp import scan
         for step in (custom_fields.create, field_help.apply, permissions.apply,
+                     seed.seed_progress_statuses,
                      workflows.create_workflows, notifications.create_notifications,
                      reports.create_reports, activities.seed_activities,
                      onboarding.create, workspaces.create, sidebars.create,

@@ -32,7 +32,31 @@ SECTIONS = [
 DELAY_REASONS = ["Manpower Shortage", "Material Delay", "Design/Approval Pending",
                  "Weather", "Rework", "Other"]
 
+# EOD task status master — (name, is_stopped, colour, order). Editable later in
+# the Progress Status list without any code change.
+PROGRESS_STATUSES = [
+    ("Work Done", 0, "Green", 1),
+    ("Work in Progress", 0, "Blue", 2),
+    ("Stopped — Rain / Natural Cause", 1, "Red", 3),
+    ("Stopped — Material Not Available", 1, "Red", 4),
+    ("Stopped — Manpower Shortage", 1, "Red", 5),
+    ("Stopped — Awaiting Approval/Drawing", 1, "Red", 6),
+    ("Stopped — Other", 1, "Red", 7),
+]
+
 EMPLOYMENT_TYPES = ["Ramshy Bio Staff", "Benkas Staff"]
+
+
+def seed_progress_statuses():
+    """Idempotent — creates the 7 default EOD statuses, keeps flags/colour in sync."""
+    for name, stopped, color, order in PROGRESS_STATUSES:
+        if frappe.db.exists("Progress Status", name):
+            frappe.db.set_value("Progress Status", name,
+                                {"is_stopped": stopped, "color": color, "display_order": order})
+            continue
+        frappe.get_doc({"doctype": "Progress Status", "status_name": name,
+                        "is_stopped": stopped, "color": color, "display_order": order}
+                       ).insert(ignore_permissions=True)
 
 
 def _ensure_company():
@@ -91,6 +115,8 @@ def run():
     for r in DELAY_REASONS:
         if not frappe.db.exists("Delay Reason", r):
             frappe.get_doc({"doctype": "Delay Reason", "reason": r}).insert(ignore_permissions=True)
+
+    seed_progress_statuses()
 
     if not frappe.db.exists("Project", PROJECT_NAME):
         project = frappe.get_doc({"doctype": "Project", "project_name": PROJECT_NAME}

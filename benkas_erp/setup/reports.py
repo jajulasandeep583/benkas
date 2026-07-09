@@ -167,19 +167,17 @@ ORDER BY qi.report_date DESC
 """,
     },
     {
-        "name": "Delay Analysis by Section", "ref_doctype": "Daily Progress Log", "module": "Work Schedule",
-        "query": """
-SELECT
-  ps.section_name   AS "Section:Data:170",
-  dtp.delay_reason  AS "Delay Reason:Link/Delay Reason:200",
-  COUNT(*)          AS "Occurrences:Int:120"
-FROM `tabDaily Progress Log` dpl
-JOIN `tabDaily Task Progress` dtp ON dtp.parent = dpl.name
-LEFT JOIN `tabPlant Section` ps ON ps.name = dpl.plant_section
-WHERE dtp.delay_reason IS NOT NULL AND dtp.delay_reason != ''
-GROUP BY ps.section_name, dtp.delay_reason
-ORDER BY COUNT(*) DESC
-""",
+        # Script report — see work_schedule/report/weekly_section_report/. Pick a
+        # section + week: each task's latest %, status, days worked/stopped, the
+        # work-description narrative, person-days, material and photo count.
+        "name": "Weekly Section Report", "ref_doctype": "Daily Progress Log",
+        "module": "Work Schedule", "script": True, "query": "",
+    },
+    {
+        # Script report — see work_schedule/report/stoppage_analysis/. Stopped
+        # section-days by reason and by section/task across a week.
+        "name": "Stoppage Analysis", "ref_doctype": "Daily Progress Log",
+        "module": "Work Schedule", "script": True, "query": "",
     },
     {
         "name": "Section WBS Progress", "ref_doctype": "Task", "module": "Work Schedule",
@@ -353,7 +351,7 @@ SELECT
   dpl.log_date    AS "Date:Date:100",
   (SELECT COUNT(*) FROM `tabDaily Worker Log` w WHERE w.parent = dpl.name) AS "Workers:Int:80",
   (SELECT ROUND(SUM(w.hours)/8, 1) FROM `tabDaily Worker Log` w WHERE w.parent = dpl.name) AS "Person-days:Float:100",
-  (SELECT GROUP_CONCAT(DISTINCT NULLIF(t.activity_description, '') SEPARATOR ' | ')
+  (SELECT GROUP_CONCAT(DISTINCT NULLIF(t.work_description, '') SEPARATOR ' | ')
      FROM `tabDaily Task Progress` t WHERE t.parent = dpl.name) AS "Work Description:Data:440"
 FROM `tabDaily Progress Log` dpl
 JOIN `tabPlant Section` ps ON ps.name = dpl.plant_section
@@ -404,7 +402,15 @@ ORDER BY COUNT(*) DESC
 ]
 
 
+# Reports removed in the EOD simplification — delete the stale Report docs on migrate.
+RETIRED_REPORTS = ["Delay Analysis by Section"]
+
+
 def create_reports():
+    for name in RETIRED_REPORTS:
+        if frappe.db.exists("Report", name):
+            frappe.delete_doc("Report", name, ignore_permissions=True, force=True)
+
     for r in REPORTS:
         is_script = r.get("script")
         rtype = "Script Report" if is_script else "Query Report"

@@ -68,6 +68,30 @@
    "icon": "table",
    "indent": 0,
    "keep_closed": 0,
+   "label": "Weekly Section Report",
+   "link_to": "Weekly Section Report",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "table",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Stoppage Analysis",
+   "link_to": "Stoppage Analysis",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "icon": "table",
+   "indent": 0,
+   "keep_closed": 0,
    "label": "Weekly Section MIS",
    "link_to": "Weekly Section MIS",
    "link_type": "Report",
@@ -135,7 +159,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-07 18:42:18.984956",
+ "modified": "2026-07-09 11:23:07.315188",
  "modified_by": "Administrator",
  "module": "Benkas Core",
  "name": "Benkas MIS",

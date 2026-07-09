@@ -296,13 +296,17 @@ def _material_request_lifecycle():
     }).insert(ignore_permissions=True).name
 
     logs = []
+    # keep the task's % unchanged: the single task row re-states the current value
+    # (on_submit sets progress to the same number; cancel then can't drift it).
+    cur_pct = frappe.db.get_value("Task", erection, "progress") or 0
 
     def issue(qty, pct, mr):
-        # intentionally NO task_progress row — this test must not mutate the demo
-        # task's progress (cancel wouldn't revert it), only issue material.
         d = frappe.get_doc({
             "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": log_date,
             "incharge": "Administrator",
+            "task_progress": [{"task": erection, "status": "Work in Progress",
+                               "percent_complete": cur_pct,
+                               "work_description": "Material issue lifecycle test — progress unchanged."}],
             "workers_present": [{"person_type": "Employee", "person": worker,
                                  "task": erection, "hours": 8}],
             "material_consumed": [{"item": item, "qty": qty, "uom": "Nos", "task": erection,
@@ -703,6 +707,9 @@ def run():
         except Exception as e:
             print(f"  FAIL  print render: {e}")
 
+    # ---------------- EOD simplification (status master, new reports, validation) ----------------
+    _eod_simplification()
+
     # ---------------- Section 360 / Task planning / Client MIS ----------------
     _section360_planning_and_mis()
 
@@ -729,6 +736,90 @@ def run():
 
     print("\n================ END AUDIT ================\n")
 
+
+
+def _expect_throw(label, doc_dict):
+    try:
+        d = frappe.get_doc(doc_dict)
+        d.insert(ignore_permissions=True)
+        print(f"  FAIL  {label} (it saved — should have thrown)")
+        _safe_cancel_delete("Daily Progress Log", d.name)
+    except frappe.ValidationError:
+        print(f"  PASS  {label}")
+    except Exception as e:
+        print(f"  FAIL  {label} (wrong error: {e})")
+
+
+def _eod_simplification():
+    """The simplified EOD flow: status master, new fields, new reports, and the
+    validation guards that stop garbage."""
+    print("\n--- EOD SIMPLIFICATION (status master, reports, validation) ---")
+
+    # 1. Progress Status master seeded with correct stopped flags
+    from benkas_erp.setup.seed import PROGRESS_STATUSES
+    have = frappe.get_all("Progress Status", pluck="name")
+    seeded_ok = all(name in have for name, *_ in PROGRESS_STATUSES)
+    stopped_ok = all(bool(frappe.db.get_value("Progress Status", name, "is_stopped")) == bool(st)
+                     for name, st, *_ in PROGRESS_STATUSES)
+    print(f"  {'PASS' if seeded_ok and stopped_ok else 'FAIL'}  Progress Status master seeded "
+          f"({len(have)} rows, stopped flags correct)")
+
+    # 2. simplified child + parent fields
+    m = frappe.get_meta("Daily Task Progress")
+    dtp_ok = (bool(m.get_field("status")) and bool(m.get_field("work_description"))
+              and m.get_field("work_description").reqd
+              and not m.get_field("activity_description") and not m.get_field("delay_reason"))
+    print(f"  {'PASS' if dtp_ok else 'FAIL'}  Daily Task Progress = task/status/%/work_description "
+          f"(old activity_description & delay_reason gone)")
+    photo_ok = bool(frappe.get_meta("Daily Progress Photo").get_field("activity_task"))
+    lm = frappe.get_meta("Daily Progress Log")
+    log_ok = bool(lm.get_field("no_work_today")) and bool(lm.get_field("no_work_reason"))
+    print(f"  {'PASS' if photo_ok else 'FAIL'}  Daily Progress Photo.activity_task present (photos group by task)")
+    print(f"  {'PASS' if log_ok else 'FAIL'}  Daily Progress Log.no_work_today + reason present")
+
+    # 3. reports present + runnable, old one gone
+    from frappe.desk.query_report import run as run_report
+    for rep in ("Weekly Section Report", "Stoppage Analysis"):
+        rtype = frappe.db.get_value("Report", rep, "report_type")
+        print(f"  {'PASS' if rtype == 'Script Report' else 'FAIL'}  report '{rep}' exists ({rtype})")
+    gone = not frappe.db.exists("Report", "Delay Analysis by Section")
+    print(f"  {'PASS' if gone else 'FAIL'}  retired 'Delay Analysis by Section' removed")
+
+    wide = {"from_date": "2000-01-01", "to_date": today()}
+    try:
+        res = run_report("Stoppage Analysis", wide)
+        rows = res.get("result", []) or []
+        rain = any("Rain" in (r.get("reason", "") if isinstance(r, dict) else "") for r in rows)
+        print(f"  PASS  Stoppage Analysis runs ({len(rows)} rows, rain stoppage present: {rain})")
+    except Exception as e:
+        print(f"  FAIL  Stoppage Analysis run: {e}")
+    try:
+        res2 = run_report("Weekly Section Report", wide)
+        print(f"  PASS  Weekly Section Report runs ({len(res2.get('result', []) or [])} rows)")
+    except Exception as e:
+        print(f"  FAIL  Weekly Section Report run: {e}")
+
+    # 4. validation guards (garbage prevention)
+    dpl_task = frappe.db.get_value(
+        "Task", {"parent_task": frappe.db.get_value("Plant Section", "DIST", "project_task")}, "name")
+    if dpl_task:
+        _expect_throw("short work_description rejected (<15 chars)", {
+            "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": today(),
+            "task_progress": [{"task": dpl_task, "status": "Work in Progress",
+                               "percent_complete": 10, "work_description": "short"}],
+            "photos": [{"image": "/assets/frappe/images/ui/avatar.png"}]})
+    _expect_throw("empty log (no rows, not No-Work) rejected", {
+        "doctype": "Daily Progress Log", "plant_section": "DIST", "log_date": today(),
+        "photos": [{"image": "/assets/frappe/images/ui/avatar.png"}]})
+    try:
+        d = frappe.get_doc({"doctype": "Daily Progress Log", "plant_section": "DIST",
+                            "log_date": today(), "no_work_today": 1,
+                            "no_work_reason": "Full rain day, site closed."})
+        d.insert(ignore_permissions=True)
+        print("  PASS  No-Work-Today log saves with a reason (no photos/tasks needed)")
+        _safe_cancel_delete("Daily Progress Log", d.name)
+    except Exception as e:
+        print(f"  FAIL  No-Work-Today log: {e}")
 
 
 def _section360_planning_and_mis():
@@ -764,8 +855,8 @@ def _section360_planning_and_mis():
     # 3. tasks carry tentative dates + weight (planning pre-fill worked)
     dated = frappe.db.sql("""SELECT COUNT(*) FROM `tabTask`
         WHERE parent_task IN (SELECT project_task FROM `tabPlant Section` WHERE project_task IS NOT NULL)
-          AND exp_start_date IS NOT NULL AND exp_end_date IS NOT NULL AND task_weight > 0""")[0][0]
-    print(f"  {'PASS' if dated > 0 else 'FAIL'}  section sub-tasks have tentative dates + weight ({dated})")
+          AND exp_start_date IS NOT NULL AND exp_end_date IS NOT NULL""")[0][0]
+    print(f"  {'PASS' if dated > 0 else 'FAIL'}  section sub-tasks have tentative dates ({dated})")
 
     sec = frappe.db.get_value("Plant Section", {"project_task": ["is", "set"]}, "name")
     if not sec:
@@ -775,13 +866,17 @@ def _section360_planning_and_mis():
         p = section360.get_section_360(sec)
         blocks_ok = all(k in p for k in ("header", "tasks", "manpower", "material", "activity"))
         h = p.get("header", {})
-        hdr_ok = isinstance(h.get("planned"), (int, float)) and isinstance(h.get("percent_complete"), (int, float)) \
-            and h.get("status") in ("On Track", "Delayed")
+        hdr_ok = isinstance(h.get("percent_complete"), (int, float)) \
+            and h.get("status") in ("On Track", "Attention") \
+            and all(k in h for k in ("total_tasks", "done", "stopped"))
+        # task block is sourced from the manual EOD log (status chip + photos)
+        task_ok = all(all(k in t for k in ("latest_status", "color", "last_description", "photos"))
+                      for t in p.get("tasks", [])) if p.get("tasks") else True
         sub_ok = all(k in p["manpower"] for k in ("today", "person_days_week", "by_contractor")) \
             and "top_items" in p["material"] and "logs" in p["activity"]
-        print(f"  {'PASS' if blocks_ok and hdr_ok and sub_ok else 'FAIL'}  get_section_360('{sec}') "
-              f"returns all blocks (planned={h.get('planned')} actual={h.get('percent_complete')} "
-              f"status={h.get('status')}, tasks={len(p.get('tasks', []))})")
+        print(f"  {'PASS' if blocks_ok and hdr_ok and sub_ok and task_ok else 'FAIL'}  get_section_360('{sec}') "
+              f"returns all blocks (actual={h.get('percent_complete')} status={h.get('status')} "
+              f"done={h.get('done')}/{h.get('total_tasks')} stopped={h.get('stopped')}, tasks={len(p.get('tasks', []))})")
 
         # 5. planner get/save roundtrip actually writes to Task
         gt = section360.get_section_tasks(sec)
