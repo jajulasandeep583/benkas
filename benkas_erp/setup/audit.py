@@ -734,6 +734,15 @@ def run():
         visible = [w for w, rs in ws_roles.items() if role in rs]
         print(f"  {role:30} -> {', '.join(visible)}")
 
+    # ---------------- User Guide completeness ----------------
+    print("\n--- USER GUIDE COMPLETENESS ---")
+    try:
+        import os as _os, tempfile
+        from benkas_erp.setup import userguide
+        userguide.verify(path=_os.path.join(tempfile.gettempdir(), "benkas_ug_audit.docx"))
+    except Exception as e:
+        print(f"  FAIL  user guide verify: {e}")
+
     print("\n================ END AUDIT ================\n")
 
 
