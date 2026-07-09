@@ -90,8 +90,8 @@ class SectionTaskPlanner {
 		let body = this.rows.map((t, i) => `
 			<tr data-i="${i}">
 				<td class="subj">${frappe.utils.escape_html(t.subject)}</td>
-				<td><input type="date" class="f-start" value="${t.exp_start_date || ''}"></td>
-				<td><input type="date" class="f-end" value="${t.exp_end_date || ''}"></td>
+				<td><input type="date" class="f-start" value="${(t.exp_start_date || '').slice(0, 10)}"></td>
+				<td><input type="date" class="f-end" value="${(t.exp_end_date || '').slice(0, 10)}"></td>
 				<td style="width:90px"><input type="number" step="0.01" min="0" max="1" class="f-weight" value="${t.task_weight != null ? t.task_weight : ''}"></td>
 				<td style="width:70px;text-align:right">${Math.round(t.progress || 0)}%</td>
 				<td style="width:110px"><span class="chip ${(t.chip||'').replace(/ /g,'')}">${t.chip || ''}</span></td>
